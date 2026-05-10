@@ -215,6 +215,7 @@ Header.TextColor3 = Color3.fromRGB(255, 255, 255)
 Header.BorderColor3 = Color3.fromRGB(0, 0, 0)
 Header.Text = "Brainrot Police"
 Header.Name = "Header"
+Header.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
 Header.TextWrapped = true
 Header.BackgroundTransparency = 1
 Header.TextXAlignment = Enum.TextXAlignment.Left
@@ -457,6 +458,7 @@ function uilib:Tab(tabName, tabIco)
     TabTitle.Position = UDim2.new(0.5990554094314575, 0, 0.5, 0)
     TabTitle.BorderSizePixel = 0
     TabTitle.TextScaled = true
+    
     TabTitle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     TabTitle.Parent = TabBtn
     applyFont(
@@ -806,7 +808,7 @@ function uilib:Tab(tabName, tabIco)
         elementtitle.Size = UDim2.new(0.8721153736114502, 0, 0.445485919713974, 0)
         elementtitle.TextColor3 = Color3.fromRGB(255, 255, 255)
         elementtitle.BorderColor3 = Color3.fromRGB(0, 0, 0)
-        elementtitle.Text = "ts a button"
+        elementtitle.Text = elementName
         elementtitle.Name = "elementtitle"
         elementtitle.TextWrapped = true
         elementtitle.BackgroundTransparency = 1
@@ -866,7 +868,7 @@ function uilib:Tab(tabName, tabIco)
         elementtitle.Size = UDim2.new(0.7875059247016907, 0, 0.4454859495162964, 0)
         elementtitle.TextColor3 = Color3.fromRGB(255, 255, 255)
         elementtitle.BorderColor3 = Color3.fromRGB(0, 0, 0)
-        elementtitle.Text = "ts a toggle"
+        elementtitle.Text = elementName
         elementtitle.Name = "elementtitle"
         elementtitle.TextWrapped = true
         elementtitle.BackgroundTransparency = 1
@@ -912,6 +914,108 @@ function uilib:Tab(tabName, tabIco)
             end
 
             pcall(cb, isToggled)
+        end)
+    end
+
+    function elements:Textbox(elementName, def, cb)
+        local TextboxMain = Instance.new("Frame")
+        TextboxMain.BackgroundTransparency = 1
+        TextboxMain.Name = "TextboxMain"
+        TextboxMain.BorderColor3 = Color3.fromRGB(0, 0, 0)
+        TextboxMain.Size = UDim2.new(0.972000002861023, 0, 0.18777988851070404, 0)
+        TextboxMain.BorderSizePixel = 0
+        TextboxMain.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        TextboxMain.Parent = SectionContainer
+
+        local ContentFrame = Instance.new("Frame")
+        ContentFrame.Name = "ContentFrame"
+        ContentFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+        ContentFrame.Size = UDim2.new(1, 0, 0.9111184477806091, 0)
+        ContentFrame.BorderSizePixel = 0
+        ContentFrame.BackgroundColor3 = Color3.fromRGB(57, 61, 81)
+        ContentFrame.Parent = TextboxMain
+
+        local UICorner = Instance.new("UICorner")
+        UICorner.Parent = ContentFrame
+
+        local UIStroke = Instance.new("UIStroke")
+        UIStroke.Color = Color3.fromRGB(130, 139, 185)
+        UIStroke.BorderStrokePosition = Enum.BorderStrokePosition.Inner
+        UIStroke.Parent = ContentFrame
+
+        local elementtitle = Instance.new("TextLabel")
+        elementtitle.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+        elementtitle.TextStrokeColor3 = Color3.fromRGB(255, 255, 255)
+        elementtitle.AnchorPoint = Vector2.new(0.5, 0.5)
+        elementtitle.TextSize = 14
+        elementtitle.Size = UDim2.new(0.5464974641799927, 0, 0.4454859495162964, 0)
+        elementtitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+        elementtitle.BorderColor3 = Color3.fromRGB(0, 0, 0)
+        elementtitle.Text = "ts a textbox"
+        elementtitle.Name = "elementtitle"
+        elementtitle.TextWrapped = true
+        elementtitle.BackgroundTransparency = 1
+        elementtitle.TextXAlignment = Enum.TextXAlignment.Left
+        elementtitle.Position = UDim2.new(0.33719107508659363, 0, 0.49999967217445374, 0)
+        elementtitle.BorderSizePixel = 0
+        elementtitle.TextScaled = true
+        elementtitle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        elementtitle.Parent = ContentFrame
+        applyFont(
+            elementtitle,
+            "georgia",
+            Enum.FontWeight.Regular,
+            Enum.FontStyle.Italic
+        )
+
+        local Frame = Instance.new("Frame")
+        Frame.AnchorPoint = Vector2.new(0.5, 0.5)
+        Frame.Position = UDim2.new(0.796999990940094, 0, 0.5, 0)
+        Frame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+        Frame.Size = UDim2.new(0.27433955669403076, 0, 0.5296337008476257, 0)
+        Frame.BorderSizePixel = 0
+        Frame.BackgroundColor3 = Color3.fromRGB(57, 61, 81)
+        Frame.Parent = ContentFrame
+
+        local UICorner = Instance.new("UICorner")
+        UICorner.Parent = Frame
+
+        local UIStroke = Instance.new("UIStroke")
+        UIStroke.Color = Color3.fromRGB(130, 139, 185)
+        UIStroke.BorderStrokePosition = Enum.BorderStrokePosition.Inner
+        UIStroke.Parent = Frame
+
+        local tbinp = Instance.new("TextBox")
+        tbinp.TextWrapped = true
+        tbinp.Active = false
+        tbinp.TextStrokeColor3 = Color3.fromRGB(255, 255, 255)
+        tbinp.AnchorPoint = Vector2.new(0.5, 0.5)
+        tbinp.PlaceholderText = "Type here"
+        tbinp.TextSize = 14
+        tbinp.Size = UDim2.new(0.8736003041267395, 0, 0.6433030962944031, 0)
+        tbinp.TextColor3 = Color3.fromRGB(255, 255, 255)
+        tbinp.BorderColor3 = Color3.fromRGB(0, 0, 0)
+        tbinp.Text = def
+        tbinp.Name = "tbinp"
+        tbinp.Selectable = false
+        tbinp.BackgroundTransparency = 1
+        tbinp.Position = UDim2.new(0.5, 0, 0.5, 0)
+        tbinp.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+        tbinp.BorderSizePixel = 0
+        tbinp.TextScaled = true
+        tbinp.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        tbinp.Parent = Frame
+        applyFont(
+            tbinp,
+            "georgia",
+            Enum.FontWeight.Regular,
+            Enum.FontStyle.Italic
+        )
+
+        tbinp.FocusLost:Connect(function(ep)
+            if ep then
+                pcall(cb, tbinp.Text)
+            end
         end)
     end
 
