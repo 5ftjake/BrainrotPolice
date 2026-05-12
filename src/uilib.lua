@@ -826,7 +826,7 @@ function uilib:Tab(tabName, tabIco)
         )
 
         ContentFrame.MouseButton1Click:Connect(function()
-            pcall(cb)
+            cb()
         end)
     end
 
@@ -913,7 +913,7 @@ function uilib:Tab(tabName, tabIco)
                 toggledindicator.Text = "🟢"
             end
 
-            pcall(cb, isToggled)
+            cb(isToggled)
         end)
     end
 
@@ -1014,7 +1014,7 @@ function uilib:Tab(tabName, tabIco)
 
         tbinp.FocusLost:Connect(function(ep)
             if ep then
-                pcall(cb, tbinp.Text)
+                cb(tbinp.Text)
             end
         end)
     end
