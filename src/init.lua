@@ -13,3 +13,10 @@ function env.getgitpath(where)
     end
 end
 
+game:GetService("GuiService").ErrorMessageChanged:Connect(function()
+    if env.autorjjjj then
+        game:GetService("TeleportService"):Teleport(game.PlaceId)
+    end
+end)
+
+loadstring(game:HttpGet(getgitpath("src").."ui.lua"))()
