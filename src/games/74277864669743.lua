@@ -6,6 +6,9 @@ return function(section)
     local plr = game:GetService("Players").LocalPlayer
     getgenv().Farming = false
     getgenv().FarmWings = false
+    getgenv().AutoBest = false
+
+    elements:Label("Auto rejoin on kick recommended. (Settings tab)")
 
     elements:Toggle("Farm Brainrots", section, function(v)
         if v then
@@ -54,6 +57,22 @@ return function(section)
             end
         else
             getgenv().FarmWings = false
+        end
+    end)
+
+    elements:Toggle("Auto Equip Best", section, function(v)
+        if v then
+            getgenv().AutoBest = true
+
+            while getgenv().AutoBest do
+                local Event = game:GetService("ReplicatedStorage").Libraries.Packet.RemoteEvent
+                Event:FireServer(
+                    buffer.fromstring("\x0E")
+                )
+                task.wait(1)
+            end
+        else
+            getgenv().AutoBest = false
         end
     end)
 end
