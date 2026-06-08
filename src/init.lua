@@ -2,8 +2,9 @@
 For a more in depth explanation and rundown of this script, I recommend you check out https://github.com/IcantAffordSynapse/BrainrotPolice
 ]]
 
-game.IsLoaded:Wait()
-
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
 local env = getgenv()
 
 if not isfolder("BrainrotPolice") then makefolder("BrainrotPolice") end
