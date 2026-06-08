@@ -1,6 +1,6 @@
 -- fly for brainrots
 
-return function(section)
+return function(section, data)
     local elements = loadstring(game:HttpGet(getgitpath("src").."elements.lua"))()
 
     local plr = game:GetService("Players").LocalPlayer
@@ -11,7 +11,10 @@ return function(section)
 
     elements:Label("Auto rejoin on kick recommended. (Settings tab)", section)
 
-    elements:Toggle("Farm Brainrots", section, function(v)
+    local oldData = data
+    data = oldData[tostring(game.PlaceId)]
+
+    elements:Toggle("Farm Brainrots", section, data and data[tostring(game.PlaceId)], function(v)
         if v then
             getgenv().Farming = true
 
@@ -45,7 +48,7 @@ return function(section)
         end
     end)
 
-    elements:Toggle("Auto Buy Speed", section, function(v)
+    elements:Toggle("Auto Buy Speed", section, data and data[tostring(game.PlaceId)], function(v)
         if v then
             getgenv().FarmWings = true
 
@@ -61,7 +64,7 @@ return function(section)
         end
     end)
 
-    elements:Toggle("Auto Equip Best", section, function(v)
+    elements:Toggle("Auto Equip Best", section, data and data[tostring(game.PlaceId)], function(v)
         if v then
             getgenv().AutoBest = true
 
@@ -77,7 +80,7 @@ return function(section)
         end
     end)
 
-    elements:Toggle("Auto Collect", section, function(v)
+    elements:Toggle("Auto Collect", section, data and data[tostring(game.PlaceId)], function(v)
         if v then
             getgenv().AutoCollect = true
 
