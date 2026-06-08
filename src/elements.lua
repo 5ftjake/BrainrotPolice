@@ -25,12 +25,10 @@ function stuff:Toggle(str, king, def, cb)
         newTog.togglebg.BackgroundColor3 = Color3.fromRGB(59, 164, 57)
         newTog.togglebg.leftrightlol.AnchorPoint = Vector2.new(1, 0.5)
         newTog.togglebg.leftrightlol.Position = UDim2.new(1, 0, 0.5, 0)
-        cb(isTog)
     else
         newTog.togglebg.BackgroundColor3 = Color3.fromRGB(164, 58, 58)
         newTog.togglebg.leftrightlol.AnchorPoint = Vector2.new(0, 0.5)
         newTog.togglebg.leftrightlol.Position = UDim2.new(0, 0, 0.5, 0)
-        cb(isTog)
     end
 
     newTog.MouseButton1Click:Connect(function()
@@ -39,13 +37,12 @@ function stuff:Toggle(str, king, def, cb)
             newTog.togglebg.BackgroundColor3 = Color3.fromRGB(59, 164, 57)
             newTog.togglebg.leftrightlol.AnchorPoint = Vector2.new(1, 0.5)
             newTog.togglebg.leftrightlol.Position = UDim2.new(1, 0, 0.5, 0)
-            cb(isTog)
         else
             newTog.togglebg.BackgroundColor3 = Color3.fromRGB(164, 58, 58)
             newTog.togglebg.leftrightlol.AnchorPoint = Vector2.new(0, 0.5)
             newTog.togglebg.leftrightlol.Position = UDim2.new(0, 0, 0.5, 0)
-            cb(isTog)
         end
+        cb(isTog)
     end)
 end
 
