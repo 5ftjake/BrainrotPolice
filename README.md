@@ -25,7 +25,7 @@ return function(section)
 
     elements:Label("This is a Label", section)
 
-    elements:Toggle("This is a Toggle", section, function(bool)
+    elements:Toggle("This is a Toggle", section, false, function(bool)
         if bool then
             print("Enabled!")
         else
@@ -37,7 +37,7 @@ return function(section)
         print("Clicked!")
     end)
 
-    elements:Textbox("This is a TextBox, section, function(str)
+    elements:Textbox("This is a TextBox, section, "", function(str)
         print("Typed: "..str)
     end)
 end
