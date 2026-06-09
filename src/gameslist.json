@@ -6,10 +6,12 @@
   { "game": "Nuke for brainrots",          "id": "109908567838703",  "status": "🟢" },
   { "game": "Hack vault for brainrots",    "id": "137069154816703",  "status": "🟡" },
   { "game": "Fly for brainrots",           "id": "74277864669743",   "status": "🟢" },
-  { "game": "Sail for Brainrots",          "id": "74277864669743",   "status": "🟢" },
+  { "game": "Sail for Brainrots",          "id": "89046742932569",   "status": "🟢" },
   { "game": "Scream for Brainrots",        "id": "94780005879799",   "status": "🟢" },
   { "game": "Parkour run for Brainrots",   "id": "97508801613157",   "status": "🟢" },
   { "game": "Pole obby for Brainrots",     "id": "102515477731035",  "status": "🟢" },
   { "game": "Dream for brainrots",         "id": "135882949571046",  "status": "🟢" },
-  { "game": "+1 Wings for Brainrots",      "id": "84332574190497",   "status": "🟢" }
+  { "game": "+1 Wings for Brainrots",      "id": "84332574190497",   "status": "🟢" },
+  { "game": "Bike Obby for Brainrots",     "id": "136919941417380",   "status": "🟢" },
+  { "game": "DUMP",                        "id": "98868317791094",   "status": "🟢" },
 ]
