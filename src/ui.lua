@@ -130,7 +130,7 @@ Sections.Home.Container.bugsLabel.Text = Sections.Home.Container.bugsLabel.Text:
 Sections.Home.Container.discan.Text = Sections.Home.Container.discan.Text:gsub("redacted", "discord.gg/vaehz")
 Sections.Home.Container.ythead.Text = Sections.Home.Container.ythead.Text:gsub("redacted", "YouTube")
 Sections.Home.Container.execLabel.Text = "Executor: " .. getexec()
-Sections.Home.Container.versionLabel.Text = "Version: 0.3 BETA"
+Sections.Home.Container.versionLabel.Text = "Version: 0.31 BETA"
 
 
 local ok, gamePath = pcall(function()
@@ -169,8 +169,9 @@ else
     gameModule(Sections.Game.Container, httpservice:JSONDecode(readfile("BrainrotPolice/Config.json")))
 end
 
+elements:Searchbar(Sections.GamesList.Container)
 for _, g in ipairs(gameList) do
-    elements:Button(g.status .. " " .. g["game"], Sections.GamesList.Container, function()
+    elements:addGame(Sections.GamesList.Container, g["game"], g["status"], function()
         exservice:LaunchExperience({placeId = g.id})
     end)
 end
