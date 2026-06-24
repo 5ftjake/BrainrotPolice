@@ -40,6 +40,8 @@ game:GetService("GuiService").ErrorMessageChanged:Connect(function()
     end
 end)
 
+game:GetService("GuiService"):SetGameplayPausedNotificationEnabled(false)
+
 loadstring(game:HttpGet(getgitpath("src").."ui.lua"))()
 
 if queue_on_teleport then
