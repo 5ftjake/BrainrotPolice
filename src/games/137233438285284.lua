@@ -1,65 +1,27 @@
 local Event = game:GetService("ReplicatedStorage").Paper.Remotes.__remoteevent
-local bestMultiplier = 0
-local currentMultiplier = 1.0
-local hasDepositedForCurrentMultiplier = false
 
--- Function to parse multiplier from event text
-local function parseMultiplierFromText(text)
-    local multiplier = text:match("([%d.]+)x")
-    if multiplier then
-        return tonumber(multiplier)
-    end
-    return nil
-end
-
--- Intercept the event and track multiplier changes
+-- Intercept the event and check for 1.5x multiplier
 for _, Connection in getconnections(Event.OnClientEvent) do
     local old; old = hookfunction(Connection.Function, function(...)
         local args = {...}
         
-        -- Check if this is the multiplier event
+        -- Check if this is the 1.5x multiplier event
         if args[1] == "UI-Notification" and args[2] and args[2].Text then
-            local multiplier = parseMultiplierFromText(args[2].Text)
-            if multiplier then
-                currentMultiplier = multiplier
+            if args[2].Text == "Egg Multiplier rose to 1.5x!" then
+                print("1.5x multiplier detected! Depositing eggs...")
                 
-                -- Update best multiplier if this one is higher
-                if multiplier > bestMultiplier then
-                    bestMultiplier = multiplier
-                    hasDepositedForCurrentMultiplier = false
-                    print(`New best multiplier detected: {bestMultiplier}x`)
-                    
-                    -- Trigger deposit since this is the best multiplier so far
-                    triggerDeposit()
-                end
+                -- Just deposit the eggs (they're already collected)
+                local mainFunction = game:GetService("ReplicatedStorage").Paper.Remotes.__remotefunction
+                pcall(function()
+                    mainFunction:InvokeServer("Deposit Eggs")
+                    print("Eggs deposited at 1.5x multiplier!")
+                end)
             end
         end
         
         print(`Intercepted (Connection) {Event.Name}.OnClientEvent`, ...)
         return old(...)
     end)
-end
-
--- Function to trigger egg deposit
-local function triggerDeposit()
-    local mainFunction = game:GetService("ReplicatedStorage").Paper.Remotes.__remotefunction
-    local mainEvent = game:GetService("ReplicatedStorage").Paper.Remotes.__remoteevent
-    
-    -- First collect all eggs
-    for i, v in pairs(workspace.Eggs:GetChildren()) do
-        pcall(function()
-            mainEvent:FireServer("Collect Egg", v.Name)
-            task.wait(0.1)
-        end)
-    end
-    
-    -- Then deposit them
-    pcall(function()
-        mainFunction:InvokeServer("Deposit Eggs")
-        print(`Deposited eggs at {currentMultiplier}x multiplier (Best: {bestMultiplier}x)`)
-    end)
-    
-    hasDepositedForCurrentMultiplier = true
 end
 
 return function(section, data)
@@ -116,11 +78,6 @@ return function(section, data)
         return base * multiplier
     end
 
-    local suffixValue = {}
-    for i, suf in ipairs(suffixes) do
-        suffixValue[suf] = 1000 ^ i
-    end
-
     elements:Label("BUY YOUR FIRST CHICKEN BEFORE AUTOFARMING (OTHERWISE WHOLE GAME BREAKS)")
 
     elements:Toggle("Autofarm", section, setdata.farming, function(v)
@@ -133,27 +90,19 @@ return function(section, data)
             return 
         end
 
-        -- Reset best multiplier tracking
-        bestMultiplier = 0
-        currentMultiplier = 1.0
-        hasDepositedForCurrentMultiplier = false
-
-        -- Initial deposit (in case there are eggs already)
+        -- Initial collection of any existing eggs
         for i, v in pairs(workspace.Eggs:GetChildren()) do
             mainEvent:FireServer(
                 "Collect Egg",
                 v.Name
             )
-            task.wait(0.1)
+            task.wait()
             v:Destroy()
         end
 
         task.wait()
 
-        mainFunction:InvokeServer(
-            "Deposit Eggs"
-        )
-
+        -- Collect eggs when they appear, but don't deposit
         addedCon = workspace.Eggs.ChildAdded:Connect(function(c)
             task.wait(1)
             mainEvent:FireServer(
@@ -162,13 +111,7 @@ return function(section, data)
             )
             task.wait()
             c:Destroy()
-            
-            -- Only deposit if we haven't deposited for the current best multiplier yet
-            if not hasDepositedForCurrentMultiplier and bestMultiplier > 0 then
-                mainFunction:InvokeServer("Deposit Eggs")
-                hasDepositedForCurrentMultiplier = true
-                print(`Deposited at best multiplier: {bestMultiplier}x`)
-            end
+            -- No deposit here - wait for 1.5x event
         end)
 
         while env.Farming do
