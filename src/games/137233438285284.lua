@@ -36,7 +36,7 @@ return function(section, data)
     local setdata = data[tostring(game.PlaceId)] or {}
     setdata.farming = setdata.farming or false
     setdata.autoBuy = setdata.autoBuy or false
-    setdata.depositMode = setdata.depositMode or true -- true = 1.5x only, false = always deposit
+    setdata.depositMode = setdata.depositMode or true
     data[tostring(game.PlaceId)] = setdata
     writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
 
@@ -70,25 +70,22 @@ return function(section, data)
 
     local function parseSuffixedNumber(str)
         str = str:gsub("[%$,%s]", "")
-
         local numberPart, suffixPart = str:match("^(-?%d*%.?%d+)(%a*)$")
-
         local base = tonumber(numberPart)
-
         if suffixPart == "" then
             return base
         end
-
         local multiplier = suffixValue[suffixPart]
-
         return base * multiplier
     end
 
-    -- Create UI Elements
+    -- Create UI Elements - Make sure we're using the correct section
+    local mainSection = section or "Main"
+    
     elements:Label("BUY YOUR FIRST CHICKEN BEFORE AUTOFARMING (OTHERWISE WHOLE GAME BREAKS)")
 
     -- Toggle for deposit mode
-    elements:Toggle("Deposit at 1.5x only", section, setdata.depositMode, function(v)
+    elements:Toggle("Deposit at 1.5x only", mainSection, setdata.depositMode, function(v)
         depositAtMultiplier = v
         setdata.depositMode = v
         data[tostring(game.PlaceId)] = setdata
@@ -102,7 +99,7 @@ return function(section, data)
     end)
 
     -- Autofarm Toggle
-    elements:Toggle("Autofarm", section, setdata.farming, function(v)
+    elements:Toggle("Autofarm", mainSection, setdata.farming, function(v)
         env.setconfig("farmrots", v)
         env.Farming = v
 
@@ -146,7 +143,6 @@ return function(section, data)
                 mainFunction:InvokeServer("Deposit Eggs")
                 print("Deposited eggs (always deposit mode)")
             end
-            -- If deposit mode is ON, just collect and wait for 1.5x event
         end)
 
         -- Start loops
@@ -155,7 +151,7 @@ return function(section, data)
     end)
     
     -- Auto Buy Chickens Toggle (separate from autofarm)
-    elements:Toggle("Auto Buy Chickens", section, setdata.autoBuy, function(v)
+    elements:Toggle("Auto Buy Chickens", mainSection, setdata.autoBuy, function(v)
         env.AutoBuy = v
         setdata.autoBuy = v
         data[tostring(game.PlaceId)] = setdata
@@ -167,7 +163,6 @@ return function(section, data)
                 buyLoop = nil
             end
         elseif env.Farming then
-            -- Start the buy loop if farming is enabled
             startBuyLoop()
         end
     end)
