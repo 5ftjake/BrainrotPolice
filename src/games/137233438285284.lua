@@ -48,6 +48,7 @@ return function(section, data)
 
     local addedCon
     local buyLoop
+    local farmLoop
 
     local suffixes = {
         "K","M","B","T","Qd","Qn","Sx","Sp","Oc","No","De",
@@ -83,6 +84,7 @@ return function(section, data)
         return base * multiplier
     end
 
+    -- Create UI Elements
     elements:Label("BUY YOUR FIRST CHICKEN BEFORE AUTOFARMING (OTHERWISE WHOLE GAME BREAKS)")
 
     -- Toggle for deposit mode
@@ -99,33 +101,15 @@ return function(section, data)
         end
     end)
 
-    -- Auto Buy Chickens Toggle
-    elements:Toggle("Auto Buy Chickens", section, setdata.autoBuy, function(v)
-        env.AutoBuy = v
-        setdata.autoBuy = v
-        data[tostring(game.PlaceId)] = setdata
-        writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
-        
-        if not v and buyLoop then
-            buyLoop:Disconnect()
-            buyLoop = nil
-        end
-        
-        if v and env.Farming then
-            -- Start the buy loop if farming is enabled
-            startBuyLoop()
-        end
-    end)
-
     -- Autofarm Toggle
     elements:Toggle("Autofarm", section, setdata.farming, function(v)
         env.setconfig("farmrots", v)
-
         env.Farming = v
 
         if not env.Farming then 
             if addedCon then addedCon:Disconnect() end
             if buyLoop then buyLoop:Disconnect() end
+            if farmLoop then farmLoop:Disconnect() end
             return 
         end
 
@@ -165,18 +149,35 @@ return function(section, data)
             -- If deposit mode is ON, just collect and wait for 1.5x event
         end)
 
-        -- Start the buy loop if auto buy is enabled
-        if env.AutoBuy then
+        -- Start loops
+        startBuyLoop()
+        startFarmingLoop()
+    end)
+    
+    -- Auto Buy Chickens Toggle (separate from autofarm)
+    elements:Toggle("Auto Buy Chickens", section, setdata.autoBuy, function(v)
+        env.AutoBuy = v
+        setdata.autoBuy = v
+        data[tostring(game.PlaceId)] = setdata
+        writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
+        
+        if not v then
+            if buyLoop then 
+                buyLoop:Disconnect() 
+                buyLoop = nil
+            end
+        elseif env.Farming then
+            -- Start the buy loop if farming is enabled
             startBuyLoop()
         end
-        
-        -- Start the main farming loop (collect cash and upgrade process level)
-        startFarmingLoop()
     end)
     
     -- Function to start the buy loop
     function startBuyLoop()
-        if buyLoop then buyLoop:Disconnect() end
+        if buyLoop then 
+            buyLoop:Disconnect() 
+            buyLoop = nil
+        end
         
         buyLoop = game:GetService("RunService").Heartbeat:Connect(function()
             if not env.Farming or not env.AutoBuy then return end
@@ -205,16 +206,20 @@ return function(section, data)
     
     -- Function to start the farming loop
     function startFarmingLoop()
-        task.spawn(function()
-            while env.Farming do
-                pcall(function()
-                    mainFunction:InvokeServer("Collect Cash")
-                    task.wait()
-                    mainFunction:InvokeServer("Upgrade Process Level")
-                    task.wait(1)
-                end)
+        if farmLoop then 
+            farmLoop:Disconnect() 
+            farmLoop = nil
+        end
+        
+        farmLoop = game:GetService("RunService").Heartbeat:Connect(function()
+            if not env.Farming then return end
+            
+            pcall(function()
+                mainFunction:InvokeServer("Collect Cash")
                 task.wait()
-            end
+                mainFunction:InvokeServer("Upgrade Process Level")
+                task.wait(1)
+            end)
         end)
     end
-end)
+end
