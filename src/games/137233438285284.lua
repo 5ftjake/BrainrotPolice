@@ -1,12 +1,13 @@
 local Event = game:GetService("ReplicatedStorage").Paper.Remotes.__remoteevent
+local depositAtMultiplier = true -- Toggle for deposit mode
 
 -- Intercept the event and check for 1.5x multiplier
 for _, Connection in getconnections(Event.OnClientEvent) do
     local old; old = hookfunction(Connection.Function, function(...)
         local args = {...}
         
-        -- Check if this is the 1.5x multiplier event
-        if args[1] == "UI-Notification" and args[2] and args[2].Text then
+        -- Check if this is the 1.5x multiplier event and if deposit mode is enabled
+        if depositAtMultiplier and args[1] == "UI-Notification" and args[2] and args[2].Text then
             if args[2].Text == "Egg Multiplier rose to 1.5x!" then
                 print("1.5x multiplier detected! Depositing eggs...")
                 
@@ -33,6 +34,7 @@ return function(section, data)
 
     local setdata = data[tostring(game.PlaceId)] or {}
     setdata.farming = setdata.farming or false
+    setdata.depositMode = setdata.depositMode or true -- true = 1.5x only, false = always deposit
     data[tostring(game.PlaceId)] = setdata
     writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
 
@@ -80,6 +82,20 @@ return function(section, data)
 
     elements:Label("BUY YOUR FIRST CHICKEN BEFORE AUTOFARMING (OTHERWISE WHOLE GAME BREAKS)")
 
+    -- Toggle for deposit mode
+    elements:Toggle("Deposit at 1.5x only", section, setdata.depositMode, function(v)
+        depositAtMultiplier = v
+        setdata.depositMode = v
+        data[tostring(game.PlaceId)] = setdata
+        writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
+        
+        if v then
+            print("Deposit mode: Only at 1.5x multiplier")
+        else
+            print("Deposit mode: Always deposit")
+        end
+    end)
+
     elements:Toggle("Autofarm", section, setdata.farming, function(v)
         env.setconfig("farmrots", v)
 
@@ -102,7 +118,13 @@ return function(section, data)
 
         task.wait()
 
-        -- Collect eggs when they appear, but don't deposit
+        -- If deposit mode is OFF, deposit immediately
+        if not depositAtMultiplier then
+            mainFunction:InvokeServer("Deposit Eggs")
+            print("Deposited eggs (always deposit mode)")
+        end
+
+        -- Collect eggs when they appear
         addedCon = workspace.Eggs.ChildAdded:Connect(function(c)
             task.wait(1)
             mainEvent:FireServer(
@@ -111,7 +133,13 @@ return function(section, data)
             )
             task.wait()
             c:Destroy()
-            -- No deposit here - wait for 1.5x event
+            
+            -- If deposit mode is OFF, deposit after each collection
+            if not depositAtMultiplier then
+                mainFunction:InvokeServer("Deposit Eggs")
+                print("Deposited eggs (always deposit mode)")
+            end
+            -- If deposit mode is ON, just collect and wait for 1.5x event
         end)
 
         while env.Farming do
