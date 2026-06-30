@@ -31,12 +31,10 @@ return function(section, data)
     local plr = game:GetService("Players").LocalPlayer
 
     env.Farming = false
-    env.AutoBuy = false
 
     local setdata = data[tostring(game.PlaceId)] or {}
     setdata.farming = setdata.farming or false
-    setdata.autoBuy = setdata.autoBuy or false
-    setdata.depositMode = setdata.depositMode or true
+    setdata.depositMode = setdata.depositMode or true -- true = 1.5x only, false = always deposit
     data[tostring(game.PlaceId)] = setdata
     writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
 
@@ -47,8 +45,6 @@ return function(section, data)
     local buyBtns = workspace.Plots[plr.Name].Buttons.BuyChickens
 
     local addedCon
-    local buyLoop
-    local farmLoop
 
     local suffixes = {
         "K","M","B","T","Qd","Qn","Sx","Sp","Oc","No","De",
@@ -70,22 +66,24 @@ return function(section, data)
 
     local function parseSuffixedNumber(str)
         str = str:gsub("[%$,%s]", "")
+
         local numberPart, suffixPart = str:match("^(-?%d*%.?%d+)(%a*)$")
+
         local base = tonumber(numberPart)
+
         if suffixPart == "" then
             return base
         end
+
         local multiplier = suffixValue[suffixPart]
+
         return base * multiplier
     end
 
-    -- Create UI Elements - Make sure we're using the correct section
-    local mainSection = section or "Main"
-    
     elements:Label("BUY YOUR FIRST CHICKEN BEFORE AUTOFARMING (OTHERWISE WHOLE GAME BREAKS)")
 
     -- Toggle for deposit mode
-    elements:Toggle("Deposit at 1.5x only", mainSection, setdata.depositMode, function(v)
+    elements:Toggle("Deposit at 1.5x only", section, setdata.depositMode, function(v)
         depositAtMultiplier = v
         setdata.depositMode = v
         data[tostring(game.PlaceId)] = setdata
@@ -98,15 +96,13 @@ return function(section, data)
         end
     end)
 
-    -- Autofarm Toggle
-    elements:Toggle("Autofarm", mainSection, setdata.farming, function(v)
+    elements:Toggle("Autofarm", section, setdata.farming, function(v)
         env.setconfig("farmrots", v)
+
         env.Farming = v
 
         if not env.Farming then 
             if addedCon then addedCon:Disconnect() end
-            if buyLoop then buyLoop:Disconnect() end
-            if farmLoop then farmLoop:Disconnect() end
             return 
         end
 
@@ -143,78 +139,38 @@ return function(section, data)
                 mainFunction:InvokeServer("Deposit Eggs")
                 print("Deposited eggs (always deposit mode)")
             end
+            -- If deposit mode is ON, just collect and wait for 1.5x event
         end)
 
-        -- Start loops
-        startBuyLoop()
-        startFarmingLoop()
-    end)
-    
-    -- Auto Buy Chickens Toggle (separate from autofarm)
-    elements:Toggle("Auto Buy Chickens", mainSection, setdata.autoBuy, function(v)
-        env.AutoBuy = v
-        setdata.autoBuy = v
-        data[tostring(game.PlaceId)] = setdata
-        writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
-        
-        if not v then
-            if buyLoop then 
-                buyLoop:Disconnect() 
-                buyLoop = nil
+        while env.Farming do
+            mainFunction:InvokeServer(
+                "Collect Cash"
+            )
+            task.wait()
+            mainFunction:InvokeServer(
+                "Upgrade Process Level"
+            )
+            task.wait()
+            local tobuy = 0
+            local result = parseSuffixedNumber(cashval.Text)
+            if parseSuffixedNumber(buyBtns.Buy100.Button.UI.Cost.Text) <= result  then
+                tobuy = 100
+            elseif parseSuffixedNumber(buyBtns.Buy25.Button.UI.Cost.Text) <= result then
+                tobuy = 25
+            elseif parseSuffixedNumber(buyBtns.Buy5.Button.UI.Cost.Text) <= result then
+                tobuy = 5
+            elseif parseSuffixedNumber(buyBtns.Buy1.Button.UI.Cost.Text) <= result then
+                tobuy = 1
             end
-        elseif env.Farming then
-            startBuyLoop()
+            mainFunction:InvokeServer(
+                "Buy Chickens",
+                tobuy
+            )
+            task.wait()
+            mainFunction:InvokeServer(
+                "Merge Chickens"
+            )
+            task.wait(1)
         end
     end)
-    
-    -- Function to start the buy loop
-    function startBuyLoop()
-        if buyLoop then 
-            buyLoop:Disconnect() 
-            buyLoop = nil
-        end
-        
-        buyLoop = game:GetService("RunService").Heartbeat:Connect(function()
-            if not env.Farming or not env.AutoBuy then return end
-            
-            pcall(function()
-                local tobuy = 0
-                local result = parseSuffixedNumber(cashval.Text)
-                if parseSuffixedNumber(buyBtns.Buy100.Button.UI.Cost.Text) <= result then
-                    tobuy = 100
-                elseif parseSuffixedNumber(buyBtns.Buy25.Button.UI.Cost.Text) <= result then
-                    tobuy = 25
-                elseif parseSuffixedNumber(buyBtns.Buy5.Button.UI.Cost.Text) <= result then
-                    tobuy = 5
-                elseif parseSuffixedNumber(buyBtns.Buy1.Button.UI.Cost.Text) <= result then
-                    tobuy = 1
-                end
-                
-                if tobuy > 0 then
-                    mainFunction:InvokeServer("Buy Chickens", tobuy)
-                    task.wait()
-                    mainFunction:InvokeServer("Merge Chickens")
-                end
-            end)
-        end)
-    end
-    
-    -- Function to start the farming loop
-    function startFarmingLoop()
-        if farmLoop then 
-            farmLoop:Disconnect() 
-            farmLoop = nil
-        end
-        
-        farmLoop = game:GetService("RunService").Heartbeat:Connect(function()
-            if not env.Farming then return end
-            
-            pcall(function()
-                mainFunction:InvokeServer("Collect Cash")
-                task.wait()
-                mainFunction:InvokeServer("Upgrade Process Level")
-                task.wait(1)
-            end)
-        end)
-    end
 end
