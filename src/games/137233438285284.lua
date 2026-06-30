@@ -31,9 +31,11 @@ return function(section, data)
     local plr = game:GetService("Players").LocalPlayer
 
     env.Farming = false
+    env.AutoBuy = false
 
     local setdata = data[tostring(game.PlaceId)] or {}
     setdata.farming = setdata.farming or false
+    setdata.autoBuy = setdata.autoBuy or false
     setdata.depositMode = setdata.depositMode or true -- true = 1.5x only, false = always deposit
     data[tostring(game.PlaceId)] = setdata
     writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
@@ -45,6 +47,7 @@ return function(section, data)
     local buyBtns = workspace.Plots[plr.Name].Buttons.BuyChickens
 
     local addedCon
+    local buyLoop
 
     local suffixes = {
         "K","M","B","T","Qd","Qn","Sx","Sp","Oc","No","De",
@@ -96,6 +99,25 @@ return function(section, data)
         end
     end)
 
+    -- Auto Buy Chickens Toggle
+    elements:Toggle("Auto Buy Chickens", section, setdata.autoBuy, function(v)
+        env.AutoBuy = v
+        setdata.autoBuy = v
+        data[tostring(game.PlaceId)] = setdata
+        writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
+        
+        if not v and buyLoop then
+            buyLoop:Disconnect()
+            buyLoop = nil
+        end
+        
+        if v and env.Farming then
+            -- Start the buy loop if farming is enabled
+            startBuyLoop()
+        end
+    end)
+
+    -- Autofarm Toggle
     elements:Toggle("Autofarm", section, setdata.farming, function(v)
         env.setconfig("farmrots", v)
 
@@ -103,6 +125,7 @@ return function(section, data)
 
         if not env.Farming then 
             if addedCon then addedCon:Disconnect() end
+            if buyLoop then buyLoop:Disconnect() end
             return 
         end
 
@@ -142,35 +165,56 @@ return function(section, data)
             -- If deposit mode is ON, just collect and wait for 1.5x event
         end)
 
-        while env.Farming do
-            mainFunction:InvokeServer(
-                "Collect Cash"
-            )
-            task.wait()
-            mainFunction:InvokeServer(
-                "Upgrade Process Level"
-            )
-            task.wait()
-            local tobuy = 0
-            local result = parseSuffixedNumber(cashval.Text)
-            if parseSuffixedNumber(buyBtns.Buy100.Button.UI.Cost.Text) <= result  then
-                tobuy = 100
-            elseif parseSuffixedNumber(buyBtns.Buy25.Button.UI.Cost.Text) <= result then
-                tobuy = 25
-            elseif parseSuffixedNumber(buyBtns.Buy5.Button.UI.Cost.Text) <= result then
-                tobuy = 5
-            elseif parseSuffixedNumber(buyBtns.Buy1.Button.UI.Cost.Text) <= result then
-                tobuy = 1
-            end
-            mainFunction:InvokeServer(
-                "Buy Chickens",
-                tobuy
-            )
-            task.wait()
-            mainFunction:InvokeServer(
-                "Merge Chickens"
-            )
-            task.wait(1)
+        -- Start the buy loop if auto buy is enabled
+        if env.AutoBuy then
+            startBuyLoop()
         end
+        
+        -- Start the main farming loop (collect cash and upgrade process level)
+        startFarmingLoop()
     end)
-end
+    
+    -- Function to start the buy loop
+    function startBuyLoop()
+        if buyLoop then buyLoop:Disconnect() end
+        
+        buyLoop = game:GetService("RunService").Heartbeat:Connect(function()
+            if not env.Farming or not env.AutoBuy then return end
+            
+            pcall(function()
+                local tobuy = 0
+                local result = parseSuffixedNumber(cashval.Text)
+                if parseSuffixedNumber(buyBtns.Buy100.Button.UI.Cost.Text) <= result then
+                    tobuy = 100
+                elseif parseSuffixedNumber(buyBtns.Buy25.Button.UI.Cost.Text) <= result then
+                    tobuy = 25
+                elseif parseSuffixedNumber(buyBtns.Buy5.Button.UI.Cost.Text) <= result then
+                    tobuy = 5
+                elseif parseSuffixedNumber(buyBtns.Buy1.Button.UI.Cost.Text) <= result then
+                    tobuy = 1
+                end
+                
+                if tobuy > 0 then
+                    mainFunction:InvokeServer("Buy Chickens", tobuy)
+                    task.wait()
+                    mainFunction:InvokeServer("Merge Chickens")
+                end
+            end)
+        end)
+    end
+    
+    -- Function to start the farming loop
+    function startFarmingLoop()
+        task.spawn(function()
+            while env.Farming do
+                pcall(function()
+                    mainFunction:InvokeServer("Collect Cash")
+                    task.wait()
+                    mainFunction:InvokeServer("Upgrade Process Level")
+                    task.wait(1)
+                end)
+                task.wait()
+            end
+        end)
+    end
+end)
