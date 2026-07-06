@@ -89,6 +89,14 @@ return function(section)
         return base * multiplier
     end
 
+    -- Function to check if an egg is a lucky block
+    local function isLuckyBlock(egg)
+        if egg and egg.Name == "LuckyBlock" then
+            return true
+        end
+        return false
+    end
+
     elements:Label("BUY YOUR FIRST CHICKEN BEFORE AUTOFARMING (OTHERWISE WHOLE GAME BREAKS)", section)
 
     -- Toggle for deposit mode
@@ -123,38 +131,46 @@ return function(section)
             return 
         end
         
-        -- Collect any existing eggs
+        -- Collect any existing eggs (skip lucky blocks)
         for i, v in pairs(workspace.Eggs:GetChildren()) do
-            mainEvent:FireServer("Collect Egg", v.Name)
-            task.wait()
-            v:Destroy()
+            if not isLuckyBlock(v) then
+                mainEvent:FireServer("Collect Egg", v.Name)
+                task.wait()
+                v:Destroy()
+            end
         end
         
-        -- Watch for new eggs and collect them
+        -- Watch for new eggs and collect them (skip lucky blocks)
         collectCon = workspace.Eggs.ChildAdded:Connect(function(c)
             task.wait(1)
-            mainEvent:FireServer("Collect Egg", c.Name)
-            task.wait()
-            c:Destroy()
+            if not isLuckyBlock(c) then
+                mainEvent:FireServer("Collect Egg", c.Name)
+                task.wait()
+                c:Destroy()
+            end
         end)
     end)
     
-    -- If the toggle was previously ON, start collecting immediately
+    -- If the toggle was previously ON, start collecting immediately (skip lucky blocks)
     if setdata.collecting then
         env.Collecting = true
-        -- Collect any existing eggs
+        -- Collect any existing eggs (skip lucky blocks)
         for i, v in pairs(workspace.Eggs:GetChildren()) do
-            mainEvent:FireServer("Collect Egg", v.Name)
-            task.wait()
-            v:Destroy()
+            if not isLuckyBlock(v) then
+                mainEvent:FireServer("Collect Egg", v.Name)
+                task.wait()
+                v:Destroy()
+            end
         end
         
-        -- Watch for new eggs and collect them
+        -- Watch for new eggs and collect them (skip lucky blocks)
         collectCon = workspace.Eggs.ChildAdded:Connect(function(c)
             task.wait(1)
-            mainEvent:FireServer("Collect Egg", c.Name)
-            task.wait()
-            c:Destroy()
+            if not isLuckyBlock(c) then
+                mainEvent:FireServer("Collect Egg", c.Name)
+                task.wait()
+                c:Destroy()
+            end
         end)
     end
 
@@ -167,11 +183,13 @@ return function(section)
             return 
         end
 
-        -- Initial collection of any existing eggs
+        -- Initial collection of any existing eggs (skip lucky blocks)
         for i, v in pairs(workspace.Eggs:GetChildren()) do
-            mainEvent:FireServer("Collect Egg", v.Name)
-            task.wait()
-            v:Destroy()
+            if not isLuckyBlock(v) then
+                mainEvent:FireServer("Collect Egg", v.Name)
+                task.wait()
+                v:Destroy()
+            end
         end
 
         task.wait()
@@ -182,17 +200,19 @@ return function(section)
             print("Deposited eggs (always deposit mode)")
         end
 
-        -- Collect eggs when they appear
+        -- Collect eggs when they appear (skip lucky blocks)
         addedCon = workspace.Eggs.ChildAdded:Connect(function(c)
             task.wait(1)
-            mainEvent:FireServer("Collect Egg", c.Name)
-            task.wait()
-            c:Destroy()
-            
-            -- If deposit mode is OFF, deposit after each collection
-            if not depositAtMultiplier then
-                mainFunction:InvokeServer("Deposit Eggs")
-                print("Deposited eggs (always deposit mode)")
+            if not isLuckyBlock(c) then
+                mainEvent:FireServer("Collect Egg", c.Name)
+                task.wait()
+                c:Destroy()
+                
+                -- If deposit mode is OFF, deposit after each collection
+                if not depositAtMultiplier then
+                    mainFunction:InvokeServer("Deposit Eggs")
+                    print("Deposited eggs (always deposit mode)")
+                end
             end
         end)
 
