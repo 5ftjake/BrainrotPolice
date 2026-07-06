@@ -33,6 +33,7 @@ return function(section)
     env.Collecting = false
     env.CollectCash = false
     env.AutoLuckyBlock = false
+    env.AutoMerge = false
 
     -- Load config
     local data = {}
@@ -45,6 +46,7 @@ return function(section)
     setdata.collectCash = setdata.collectCash or false
     setdata.depositMode = setdata.depositMode or true
     setdata.autoLuckyBlock = setdata.autoLuckyBlock or false
+    setdata.autoMerge = setdata.autoMerge or false
     data[tostring(game.PlaceId)] = setdata
     writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
 
@@ -52,9 +54,9 @@ return function(section)
     local mainFunction = game:GetService("ReplicatedStorage").Paper.Remotes.__remotefunction
 
     local collectCon
-    local cashLoop
-    local luckyBlockLoop
     local luckyBlockRunning = false
+    local mergeRunning = false
+    local cashRunning = false
 
     -- Function to check if an egg is a lucky block
     local function isLuckyBlock(egg)
@@ -159,10 +161,6 @@ return function(section)
         
         if not env.AutoLuckyBlock then
             luckyBlockRunning = false
-            if luckyBlockLoop then
-                luckyBlockLoop:Disconnect()
-                luckyBlockLoop = nil
-            end
             return
         end
         
@@ -196,6 +194,52 @@ return function(section)
         end
     end
 
+    -- Auto Merge Chickens Toggle
+    elements:Toggle("Auto Merge Chickens", section, setdata.autoMerge, function(v)
+        env.AutoMerge = v
+        setdata.autoMerge = v
+        data[tostring(game.PlaceId)] = setdata
+        writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
+        
+        print("Auto Merge Chickens toggled to: " .. tostring(v))
+        
+        if not env.AutoMerge then
+            mergeRunning = false
+            return
+        end
+        
+        -- Start merge loop - runs every 10 seconds
+        if not mergeRunning then
+            mergeRunning = true
+            task.spawn(function()
+                while mergeRunning and env.AutoMerge do
+                    pcall(function()
+                        mainFunction:InvokeServer("Merge Chickens")
+                        print("🔄 Merged chickens!")
+                    end)
+                    task.wait(10) -- Wait 10 seconds between merges
+                end
+            end)
+        end
+    end)
+    
+    -- If merge was previously ON, start it
+    if setdata.autoMerge then
+        env.AutoMerge = true
+        if not mergeRunning then
+            mergeRunning = true
+            task.spawn(function()
+                while mergeRunning and env.AutoMerge do
+                    pcall(function()
+                        mainFunction:InvokeServer("Merge Chickens")
+                        print("🔄 Merged chickens!")
+                    end)
+                    task.wait(10) -- Wait 10 seconds between merges
+                end
+            end)
+        end
+    end
+
     -- Auto Collect Cash Toggle
     elements:Toggle("Auto Collect Cash", section, setdata.collectCash, function(v)
         env.CollectCash = v
@@ -206,33 +250,40 @@ return function(section)
         print("Auto Collect Cash toggled to: " .. tostring(v))
         
         if not env.CollectCash then
-            if cashLoop then
-                cashLoop:Disconnect()
-                cashLoop = nil
-            end
+            cashRunning = false
             return
         end
         
-        -- Start cash collection loop
-        cashLoop = game:GetService("RunService").Heartbeat:Connect(function()
-            if not env.CollectCash then return end
-            
-            pcall(function()
-                mainFunction:InvokeServer("Collect Cash")
+        -- Start cash collection loop - runs every 10 seconds
+        if not cashRunning then
+            cashRunning = true
+            task.spawn(function()
+                while cashRunning and env.CollectCash do
+                    pcall(function()
+                        mainFunction:InvokeServer("Collect Cash")
+                        print("💰 Collected cash!")
+                    end)
+                    task.wait(10) -- Wait 10 seconds between collections
+                end
             end)
-        end)
+        end
     end)
     
     -- If cash collection was previously ON, start it
     if setdata.collectCash then
         env.CollectCash = true
-        cashLoop = game:GetService("RunService").Heartbeat:Connect(function()
-            if not env.CollectCash then return end
-            
-            pcall(function()
-                mainFunction:InvokeServer("Collect Cash")
+        if not cashRunning then
+            cashRunning = true
+            task.spawn(function()
+                while cashRunning and env.CollectCash do
+                    pcall(function()
+                        mainFunction:InvokeServer("Collect Cash")
+                        print("💰 Collected cash!")
+                    end)
+                    task.wait(10) -- Wait 10 seconds between collections
+                end
             end)
-        end)
+        end
     end
 
     -- Standalone Egg Collection Toggle
