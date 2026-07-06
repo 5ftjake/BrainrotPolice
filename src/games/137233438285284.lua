@@ -30,7 +30,6 @@ return function(section)
     local env = getgenv()
     local plr = game:GetService("Players").LocalPlayer
 
-    env.Farming = false
     env.Collecting = false
     env.CollectCash = false
     env.AutoLuckyBlock = false
@@ -42,7 +41,6 @@ return function(section)
     end
     
     local setdata = data[tostring(game.PlaceId)] or {}
-    setdata.farming = setdata.farming or false
     setdata.collecting = setdata.collecting or false
     setdata.collectCash = setdata.collectCash or false
     setdata.depositMode = setdata.depositMode or true
@@ -54,52 +52,16 @@ return function(section)
 
     local mainEvent = game:GetService("ReplicatedStorage").Paper.Remotes.__remoteevent
     local mainFunction = game:GetService("ReplicatedStorage").Paper.Remotes.__remotefunction
-    local buyBtns = workspace.Plots[plr.Name].Buttons.BuyChickens
 
-    local addedCon
     local collectCon
     local cashLoop
     local luckyBlockLoop
-
-    local suffixes = {
-        "K","M","B","T","Qd","Qn","Sx","Sp","Oc","No","De",
-        "UDe","DDe","TDe","QdDe","QnDe","SxDe","SpDe","OcDe","NoDe","Vt",
-        "UVt","DVt","TVt","QdVt","QnVt","SxVt","SpVt","OcVt","NoVt","Tg",
-        "UTg","DTg","TTg","QdTg","QnTg","SxTg","SpTg","OcTg","NoTg","qg",
-        "Uqg","Dqg","Tqg","Qdqg","Qnqg","Sxqg","Spqg","Ocqg","Noqg","Qg",
-        "UQg","DQg","TQg","QdQg","QnQg","SxQg","SpQg","OcQg","NoQg","sg",
-        "Usg","Dsg","Tsg","Qdsg","Qnsg","Sxsg","Spsg","Ocsg","Nosg","Sg",
-        "USg","DSg","TSg","QdSg","QnSg","SxSg","SpSg","OcSg","NoSg","Og",
-        "UOg","DOg","TOg","QdOg","QnOg","SxOg","SpOg","OcOg","NoOg","Ng",
-        "UNg","DNg","TNg","QdNg","QnNg","SxNg","SpNg","OcNg","NoNg","Ce","UCe"
-    }
-
-    local suffixValue = {}
-    for i, suf in ipairs(suffixes) do
-        suffixValue[suf] = 1000 ^ i
-    end
-
-    local function parseSuffixedNumber(str)
-        str = str:gsub("[%$,%s]", "")
-
-        local numberPart, suffixPart = str:match("^(-?%d*%.?%d+)(%a*)$")
-
-        local base = tonumber(numberPart)
-
-        if suffixPart == "" then
-            return base
-        end
-
-        local multiplier = suffixValue[suffixPart]
-
-        return base * multiplier
-    end
 
     -- Function to check if an egg is a lucky block
     local function isLuckyBlock(egg)
         if not egg then return false end
         
-        -- Check if it has the LuckyBlock attribute (from the screenshot)
+        -- Check if it has the LuckyBlock attribute
         if egg:GetAttribute("LuckyBlock") ~= nil then
             return true
         end
@@ -178,7 +140,7 @@ return function(section)
         end
     end
 
-    elements:Label("BUY YOUR FIRST CHICKEN BEFORE AUTOFARMING (OTHERWISE WHOLE GAME BREAKS)", section)
+    elements:Label("LUCKY BLOCK FARMING - ALL TOGGLES INDEPENDENT", section)
 
     -- Toggle for deposit mode
     elements:Toggle("Deposit at 1.5x only", section, setdata.depositMode, function(v)
@@ -295,7 +257,7 @@ return function(section)
     end
 
     -- Standalone Egg Collection Toggle
-    local collectToggle = elements:Toggle("Collect Eggs Only", section, setdata.collecting, function(v)
+    elements:Toggle("Collect Eggs Only", section, setdata.collecting, function(v)
         -- Update the state
         env.Collecting = v
         setdata.collecting = v
@@ -320,7 +282,7 @@ return function(section)
                 task.wait()
                 v:Destroy()
             else
-                print("Skipping lucky block: " .. v.Name .. " (LuckyBlock attribute: " .. tostring(v:GetAttribute("LuckyBlock")) .. ")")
+                print("Skipping lucky block: " .. v.Name)
             end
         end
         
@@ -333,7 +295,7 @@ return function(section)
                 task.wait()
                 c:Destroy()
             else
-                print("Skipping lucky block: " .. c.Name .. " (LuckyBlock attribute: " .. tostring(c:GetAttribute("LuckyBlock")) .. ")")
+                print("Skipping lucky block: " .. c.Name)
             end
         end)
     end)
@@ -349,7 +311,7 @@ return function(section)
                 task.wait()
                 v:Destroy()
             else
-                print("Skipping lucky block: " .. v.Name .. " (LuckyBlock attribute: " .. tostring(v:GetAttribute("LuckyBlock")) .. ")")
+                print("Skipping lucky block: " .. v.Name)
             end
         end
         
@@ -362,73 +324,8 @@ return function(section)
                 task.wait()
                 c:Destroy()
             else
-                print("Skipping lucky block: " .. c.Name .. " (LuckyBlock attribute: " .. tostring(c:GetAttribute("LuckyBlock")) .. ")")
+                print("Skipping lucky block: " .. c.Name)
             end
         end)
     end
-
-    elements:Toggle("Autofarm", section, setdata.farming, function(v)
-        env.setconfig("farmrots", v)
-        env.Farming = v
-
-        if not env.Farming then 
-            if addedCon then addedCon:Disconnect() end
-            return 
-        end
-
-        -- Initial collection of any existing eggs (skip lucky blocks)
-        for i, v in pairs(workspace.Eggs:GetChildren()) do
-            if not isLuckyBlock(v) then
-                mainEvent:FireServer("Collect Egg", v.Name)
-                task.wait()
-                v:Destroy()
-            end
-        end
-
-        task.wait()
-
-        -- If deposit mode is OFF, deposit immediately
-        if not depositAtMultiplier then
-            mainFunction:InvokeServer("Deposit Eggs")
-            print("Deposited eggs (always deposit mode)")
-        end
-
-        -- Collect eggs when they appear (skip lucky blocks)
-        addedCon = workspace.Eggs.ChildAdded:Connect(function(c)
-            task.wait(1)
-            if not isLuckyBlock(c) then
-                mainEvent:FireServer("Collect Egg", c.Name)
-                task.wait()
-                c:Destroy()
-                
-                -- If deposit mode is OFF, deposit after each collection
-                if not depositAtMultiplier then
-                    mainFunction:InvokeServer("Deposit Eggs")
-                    print("Deposited eggs (always deposit mode)")
-                end
-            end
-        end)
-
-        while env.Farming do
-            mainFunction:InvokeServer("Collect Cash")
-            task.wait()
-            mainFunction:InvokeServer("Upgrade Process Level")
-            task.wait()
-            local tobuy = 0
-            local result = parseSuffixedNumber(cashval.Text)
-            if parseSuffixedNumber(buyBtns.Buy100.Button.UI.Cost.Text) <= result  then
-                tobuy = 100
-            elseif parseSuffixedNumber(buyBtns.Buy25.Button.UI.Cost.Text) <= result then
-                tobuy = 25
-            elseif parseSuffixedNumber(buyBtns.Buy5.Button.UI.Cost.Text) <= result then
-                tobuy = 5
-            elseif parseSuffixedNumber(buyBtns.Buy1.Button.UI.Cost.Text) <= result then
-                tobuy = 1
-            end
-            mainFunction:InvokeServer("Buy Chickens", tobuy)
-            task.wait()
-            mainFunction:InvokeServer("Merge Chickens")
-            task.wait(1)
-        end
-    end)
 end
