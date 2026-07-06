@@ -31,9 +31,11 @@ return function(section, data)
     local plr = game:GetService("Players").LocalPlayer
 
     env.Farming = false
+    env.Collecting = false
 
     local setdata = data[tostring(game.PlaceId)] or {}
     setdata.farming = setdata.farming or false
+    setdata.collecting = setdata.collecting or false
     setdata.depositMode = setdata.depositMode or true -- true = 1.5x only, false = always deposit
     data[tostring(game.PlaceId)] = setdata
     writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
@@ -45,6 +47,7 @@ return function(section, data)
     local buyBtns = workspace.Plots[plr.Name].Buttons.BuyChickens
 
     local addedCon
+    local collectCon
 
     local suffixes = {
         "K","M","B","T","Qd","Qn","Sx","Sp","Oc","No","De",
@@ -94,6 +97,41 @@ return function(section, data)
         else
             print("Deposit mode: Always deposit")
         end
+    end)
+
+    -- Standalone Egg Collection Toggle
+    elements:Toggle("Collect Eggs Only", section, setdata.collecting, function(v)
+        env.Collecting = v
+        setdata.collecting = v
+        data[tostring(game.PlaceId)] = setdata
+        writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
+        
+        if not env.Collecting then 
+            if collectCon then collectCon:Disconnect() end
+            return 
+        end
+        
+        -- Collect any existing eggs
+        for i, v in pairs(workspace.Eggs:GetChildren()) do
+            mainEvent:FireServer(
+                "Collect Egg",
+                v.Name
+            )
+            task.wait()
+            v:Destroy()
+        end
+        
+        -- Watch for new eggs and collect them
+        collectCon = workspace.Eggs.ChildAdded:Connect(function(c)
+            task.wait(1)
+            mainEvent:FireServer(
+                "Collect Egg",
+                c.Name
+            )
+            task.wait()
+            c:Destroy()
+            -- No deposit here - waits for 1.5x event from the interceptor
+        end)
     end)
 
     elements:Toggle("Autofarm", section, setdata.farming, function(v)
