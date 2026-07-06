@@ -32,6 +32,7 @@ return function(section)
 
     env.Farming = false
     env.Collecting = false
+    env.CollectCash = false
 
     -- Load config
     local data = {}
@@ -42,6 +43,7 @@ return function(section)
     local setdata = data[tostring(game.PlaceId)] or {}
     setdata.farming = setdata.farming or false
     setdata.collecting = setdata.collecting or false
+    setdata.collectCash = setdata.collectCash or false
     setdata.depositMode = setdata.depositMode or true
     data[tostring(game.PlaceId)] = setdata
     writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
@@ -54,6 +56,7 @@ return function(section)
 
     local addedCon
     local collectCon
+    local cashLoop
 
     local suffixes = {
         "K","M","B","T","Qd","Qn","Sx","Sp","Oc","No","De",
@@ -121,6 +124,45 @@ return function(section)
             print("Deposit mode: Always deposit")
         end
     end)
+
+    -- Auto Collect Cash Toggle
+    elements:Toggle("Auto Collect Cash", section, setdata.collectCash, function(v)
+        env.CollectCash = v
+        setdata.collectCash = v
+        data[tostring(game.PlaceId)] = setdata
+        writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
+        
+        print("Auto Collect Cash toggled to: " .. tostring(v))
+        
+        if not env.CollectCash then
+            if cashLoop then
+                cashLoop:Disconnect()
+                cashLoop = nil
+            end
+            return
+        end
+        
+        -- Start cash collection loop
+        cashLoop = game:GetService("RunService").Heartbeat:Connect(function()
+            if not env.CollectCash then return end
+            
+            pcall(function()
+                mainFunction:InvokeServer("Collect Cash")
+            end)
+        end)
+    end)
+    
+    -- If cash collection was previously ON, start it
+    if setdata.collectCash then
+        env.CollectCash = true
+        cashLoop = game:GetService("RunService").Heartbeat:Connect(function()
+            if not env.CollectCash then return end
+            
+            pcall(function()
+                mainFunction:InvokeServer("Collect Cash")
+            end)
+        end)
+    end
 
     -- Standalone Egg Collection Toggle
     local collectToggle = elements:Toggle("Collect Eggs Only", section, setdata.collecting, function(v)
