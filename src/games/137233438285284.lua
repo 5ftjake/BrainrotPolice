@@ -33,6 +33,7 @@ return function(section)
     env.Farming = false
     env.Collecting = false
     env.CollectCash = false
+    env.AutoLuckyBlock = false
 
     -- Load config
     local data = {}
@@ -45,6 +46,7 @@ return function(section)
     setdata.collecting = setdata.collecting or false
     setdata.collectCash = setdata.collectCash or false
     setdata.depositMode = setdata.depositMode or true
+    setdata.autoLuckyBlock = setdata.autoLuckyBlock or false
     data[tostring(game.PlaceId)] = setdata
     writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
 
@@ -57,6 +59,7 @@ return function(section)
     local addedCon
     local collectCon
     local cashLoop
+    local luckyBlockLoop
 
     local suffixes = {
         "K","M","B","T","Qd","Qn","Sx","Sp","Oc","No","De",
@@ -109,6 +112,72 @@ return function(section)
         return false
     end
 
+    -- Function to handle lucky block opening/discarding
+    local function handleLuckyBlock()
+        local remoteFunction = game:GetService("ReplicatedStorage").Paper.Remotes.__remotefunction
+        local remoteEvent = game:GetService("ReplicatedStorage").Paper.Remotes.__remoteevent
+        
+        local function claimOpenedChicken()
+            pcall(function()
+                remoteEvent:FireServer("Claim Opened Chicken")
+            end)
+        end
+        
+        -- Try to open the lucky block
+        local result = remoteFunction:InvokeServer("Open Lucky Block")
+        
+        if type(result) == "table" then
+            if result[1] == true then
+                print("✅ Lucky Block opened! Tier:", result[2])
+                claimOpenedChicken()
+                return true
+            else
+                local errorMsg = result[2] or "Unknown error"
+                
+                -- Check for money issue
+                if errorMsg and string.find(string.lower(errorMsg), "need") then
+                    print("💰 Not enough money, discarding...")
+                    pcall(function()
+                        remoteEvent:FireServer("Discard Lucky Block")
+                    end)
+                    return false
+                elseif errorMsg and string.find(string.lower(errorMsg), "please wait") then
+                    print("⏳ Please wait, claiming and retrying...")
+                    claimOpenedChicken()
+                    task.wait(3)
+                    
+                    local retry = remoteFunction:InvokeServer("Open Lucky Block")
+                    if type(retry) == "table" and retry[1] == true then
+                        print("✅ Opened on retry! Tier:", retry[2])
+                        claimOpenedChicken()
+                        return true
+                    else
+                        print("❌ Retry failed, keeping the lucky block...")
+                        return false
+                    end
+                else
+                    print("💡 Keeping the lucky block...")
+                    return false
+                end
+            end
+        elseif type(result) == "boolean" then
+            if result then
+                print("✅ Lucky Block opened!")
+                claimOpenedChicken()
+                return true
+            else
+                print("❌ Failed to open, discarding...")
+                pcall(function()
+                    remoteEvent:FireServer("Discard Lucky Block")
+                end)
+                return false
+            end
+        else
+            print("❌ Unexpected result, keeping the lucky block...")
+            return false
+        end
+    end
+
     elements:Label("BUY YOUR FIRST CHICKEN BEFORE AUTOFARMING (OTHERWISE WHOLE GAME BREAKS)", section)
 
     -- Toggle for deposit mode
@@ -124,6 +193,67 @@ return function(section)
             print("Deposit mode: Always deposit")
         end
     end)
+
+    -- Auto Lucky Block Toggle
+    elements:Toggle("Auto Lucky Block", section, setdata.autoLuckyBlock, function(v)
+        env.AutoLuckyBlock = v
+        setdata.autoLuckyBlock = v
+        data[tostring(game.PlaceId)] = setdata
+        writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
+        
+        print("Auto Lucky Block toggled to: " .. tostring(v))
+        
+        if not env.AutoLuckyBlock then
+            if luckyBlockLoop then
+                luckyBlockLoop:Disconnect()
+                luckyBlockLoop = nil
+            end
+            return
+        end
+        
+        -- Start lucky block handler loop
+        luckyBlockLoop = game:GetService("RunService").Heartbeat:Connect(function()
+            if not env.AutoLuckyBlock then return end
+            
+            pcall(function()
+                -- Check if there's a lucky block in workspace.Eggs
+                local hasLuckyBlock = false
+                for _, egg in pairs(workspace.Eggs:GetChildren()) do
+                    if isLuckyBlock(egg) then
+                        hasLuckyBlock = true
+                        break
+                    end
+                end
+                
+                if hasLuckyBlock then
+                    handleLuckyBlock()
+                end
+            end)
+        end)
+    end)
+    
+    -- If lucky block toggle was previously ON, start it
+    if setdata.autoLuckyBlock then
+        env.AutoLuckyBlock = true
+        luckyBlockLoop = game:GetService("RunService").Heartbeat:Connect(function()
+            if not env.AutoLuckyBlock then return end
+            
+            pcall(function()
+                -- Check if there's a lucky block in workspace.Eggs
+                local hasLuckyBlock = false
+                for _, egg in pairs(workspace.Eggs:GetChildren()) do
+                    if isLuckyBlock(egg) then
+                        hasLuckyBlock = true
+                        break
+                    end
+                end
+                
+                if hasLuckyBlock then
+                    handleLuckyBlock()
+                end
+            end)
+        end)
+    end
 
     -- Auto Collect Cash Toggle
     elements:Toggle("Auto Collect Cash", section, setdata.collectCash, function(v)
