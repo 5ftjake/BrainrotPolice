@@ -54,6 +54,7 @@ return function(section)
     local collectCon
     local cashLoop
     local luckyBlockLoop
+    local luckyBlockRunning = false
 
     -- Function to check if an egg is a lucky block
     local function isLuckyBlock(egg)
@@ -157,6 +158,7 @@ return function(section)
         print("Auto Lucky Block toggled to: " .. tostring(v))
         
         if not env.AutoLuckyBlock then
+            luckyBlockRunning = false
             if luckyBlockLoop then
                 luckyBlockLoop:Disconnect()
                 luckyBlockLoop = nil
@@ -165,25 +167,33 @@ return function(section)
         end
         
         -- Start lucky block handler loop - runs every 1 second
-        luckyBlockLoop = game:GetService("RunService").Stepped:Connect(function()
-            if not env.AutoLuckyBlock then return end
-            
-            pcall(function()
-                handleLuckyBlock()
+        if not luckyBlockRunning then
+            luckyBlockRunning = true
+            task.spawn(function()
+                while luckyBlockRunning and env.AutoLuckyBlock do
+                    pcall(function()
+                        handleLuckyBlock()
+                    end)
+                    task.wait(1) -- Wait 1 second between attempts
+                end
             end)
-        end)
+        end
     end)
     
     -- If lucky block toggle was previously ON, start it
     if setdata.autoLuckyBlock then
         env.AutoLuckyBlock = true
-        luckyBlockLoop = game:GetService("RunService").Stepped:Connect(function()
-            if not env.AutoLuckyBlock then return end
-            
-            pcall(function()
-                handleLuckyBlock()
+        if not luckyBlockRunning then
+            luckyBlockRunning = true
+            task.spawn(function()
+                while luckyBlockRunning and env.AutoLuckyBlock do
+                    pcall(function()
+                        handleLuckyBlock()
+                    end)
+                    task.wait(1) -- Wait 1 second between attempts
+                end
             end)
-        end)
+        end
     end
 
     -- Auto Collect Cash Toggle
