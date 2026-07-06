@@ -25,7 +25,7 @@ for _, Connection in getconnections(Event.OnClientEvent) do
     end)
 end
 
-return function(section, data)
+return function(section)
     local elements = loadstring(game:HttpGet(getgitpath("src").."elements.lua"))()
     local env = getgenv()
     local plr = game:GetService("Players").LocalPlayer
@@ -33,6 +33,12 @@ return function(section, data)
     env.Farming = false
     env.Collecting = false
 
+    -- Load config
+    local data = {}
+    if isfile("BrainrotPolice/Config.json") then
+        data = game:GetService("HttpService"):JSONDecode(readfile("BrainrotPolice/Config.json"))
+    end
+    
     local setdata = data[tostring(game.PlaceId)] or {}
     setdata.farming = setdata.farming or false
     setdata.collecting = setdata.collecting or false
@@ -83,10 +89,7 @@ return function(section, data)
         return base * multiplier
     end
 
-    -- Create a new section for egg collection to keep it organized
-    local collectSection = "Egg Collection"
-    
-    elements:Label("BUY YOUR FIRST CHICKEN BEFORE AUTOFARMING (OTHERWISE WHOLE GAME BREAKS)")
+    elements:Label("BUY YOUR FIRST CHICKEN BEFORE AUTOFARMING (OTHERWISE WHOLE GAME BREAKS)", section)
 
     -- Toggle for deposit mode
     elements:Toggle("Deposit at 1.5x only", section, setdata.depositMode, function(v)
@@ -102,14 +105,14 @@ return function(section, data)
         end
     end)
 
-    -- Standalone Egg Collection Toggle - using the same section
-    local collectToggle = elements:Toggle("Collect Eggs Only", section, setdata.collecting, function(v)
+    -- Standalone Egg Collection Toggle
+    elements:Toggle("Collect Eggs Only", section, setdata.collecting, function(v)
         env.Collecting = v
         setdata.collecting = v
         data[tostring(game.PlaceId)] = setdata
         writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
         
-        print("Collect Eggs Only toggled to: " .. tostring(v))
+        print("Collect Eggs Only: " .. tostring(v))
         
         if not env.Collecting then 
             if collectCon then 
@@ -121,10 +124,7 @@ return function(section, data)
         
         -- Collect any existing eggs
         for i, v in pairs(workspace.Eggs:GetChildren()) do
-            mainEvent:FireServer(
-                "Collect Egg",
-                v.Name
-            )
+            mainEvent:FireServer("Collect Egg", v.Name)
             task.wait()
             v:Destroy()
         end
@@ -132,22 +132,14 @@ return function(section, data)
         -- Watch for new eggs and collect them
         collectCon = workspace.Eggs.ChildAdded:Connect(function(c)
             task.wait(1)
-            mainEvent:FireServer(
-                "Collect Egg",
-                c.Name
-            )
+            mainEvent:FireServer("Collect Egg", c.Name)
             task.wait()
             c:Destroy()
-            -- No deposit here - waits for 1.5x event from the interceptor
         end)
     end)
-    
-    -- Make sure the toggle is visible by printing its state
-    print("Collect Eggs Only toggle created with state: " .. tostring(setdata.collecting))
 
     elements:Toggle("Autofarm", section, setdata.farming, function(v)
         env.setconfig("farmrots", v)
-
         env.Farming = v
 
         if not env.Farming then 
@@ -157,10 +149,7 @@ return function(section, data)
 
         -- Initial collection of any existing eggs
         for i, v in pairs(workspace.Eggs:GetChildren()) do
-            mainEvent:FireServer(
-                "Collect Egg",
-                v.Name
-            )
+            mainEvent:FireServer("Collect Egg", v.Name)
             task.wait()
             v:Destroy()
         end
@@ -176,10 +165,7 @@ return function(section, data)
         -- Collect eggs when they appear
         addedCon = workspace.Eggs.ChildAdded:Connect(function(c)
             task.wait(1)
-            mainEvent:FireServer(
-                "Collect Egg",
-                c.Name
-            )
+            mainEvent:FireServer("Collect Egg", c.Name)
             task.wait()
             c:Destroy()
             
@@ -188,17 +174,12 @@ return function(section, data)
                 mainFunction:InvokeServer("Deposit Eggs")
                 print("Deposited eggs (always deposit mode)")
             end
-            -- If deposit mode is ON, just collect and wait for 1.5x event
         end)
 
         while env.Farming do
-            mainFunction:InvokeServer(
-                "Collect Cash"
-            )
+            mainFunction:InvokeServer("Collect Cash")
             task.wait()
-            mainFunction:InvokeServer(
-                "Upgrade Process Level"
-            )
+            mainFunction:InvokeServer("Upgrade Process Level")
             task.wait()
             local tobuy = 0
             local result = parseSuffixedNumber(cashval.Text)
@@ -211,14 +192,9 @@ return function(section, data)
             elseif parseSuffixedNumber(buyBtns.Buy1.Button.UI.Cost.Text) <= result then
                 tobuy = 1
             end
-            mainFunction:InvokeServer(
-                "Buy Chickens",
-                tobuy
-            )
+            mainFunction:InvokeServer("Buy Chickens", tobuy)
             task.wait()
-            mainFunction:InvokeServer(
-                "Merge Chickens"
-            )
+            mainFunction:InvokeServer("Merge Chickens")
             task.wait(1)
         end
     end)
