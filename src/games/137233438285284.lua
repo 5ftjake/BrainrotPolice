@@ -106,13 +106,14 @@ return function(section)
     end)
 
     -- Standalone Egg Collection Toggle
-    elements:Toggle("Collect Eggs Only", section, setdata.collecting, function(v)
+    local collectToggle = elements:Toggle("Collect Eggs Only", section, setdata.collecting, function(v)
+        -- Update the state
         env.Collecting = v
         setdata.collecting = v
         data[tostring(game.PlaceId)] = setdata
         writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
         
-        print("Collect Eggs Only: " .. tostring(v))
+        print("Collect Eggs Only toggled to: " .. tostring(v))
         
         if not env.Collecting then 
             if collectCon then 
@@ -137,6 +138,25 @@ return function(section)
             c:Destroy()
         end)
     end)
+    
+    -- If the toggle was previously ON, start collecting immediately
+    if setdata.collecting then
+        env.Collecting = true
+        -- Collect any existing eggs
+        for i, v in pairs(workspace.Eggs:GetChildren()) do
+            mainEvent:FireServer("Collect Egg", v.Name)
+            task.wait()
+            v:Destroy()
+        end
+        
+        -- Watch for new eggs and collect them
+        collectCon = workspace.Eggs.ChildAdded:Connect(function(c)
+            task.wait(1)
+            mainEvent:FireServer("Collect Egg", c.Name)
+            task.wait()
+            c:Destroy()
+        end)
+    end
 
     elements:Toggle("Autofarm", section, setdata.farming, function(v)
         env.setconfig("farmrots", v)
