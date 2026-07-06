@@ -56,6 +56,7 @@ return function(section)
     local collectCon
     local cashLoop
     local luckyBlockLoop
+    local isProcessingLuckyBlock = false
 
     -- Function to check if an egg is a lucky block
     local function isLuckyBlock(egg)
@@ -74,8 +75,32 @@ return function(section)
         return false
     end
 
+    -- Function to get the first lucky block in workspace.Eggs
+    local function getFirstLuckyBlock()
+        for _, egg in pairs(workspace.Eggs:GetChildren()) do
+            if isLuckyBlock(egg) then
+                return egg
+            end
+        end
+        return nil
+    end
+
     -- Function to handle lucky block opening/discarding
     local function handleLuckyBlock()
+        -- First check if there's actually a lucky block
+        local luckyBlock = getFirstLuckyBlock()
+        if not luckyBlock then
+            -- No lucky block found, nothing to do
+            return false
+        end
+        
+        -- Prevent multiple simultaneous attempts
+        if isProcessingLuckyBlock then
+            return false
+        end
+        
+        isProcessingLuckyBlock = true
+        
         local remoteFunction = game:GetService("ReplicatedStorage").Paper.Remotes.__remotefunction
         local remoteEvent = game:GetService("ReplicatedStorage").Paper.Remotes.__remoteevent
         
@@ -92,6 +117,7 @@ return function(section)
             if result[1] == true then
                 print("✅ Lucky Block opened! Tier:", result[2])
                 claimOpenedChicken()
+                isProcessingLuckyBlock = false
                 return true
             else
                 local errorMsg = result[2] or "Unknown error"
@@ -102,6 +128,7 @@ return function(section)
                     pcall(function()
                         remoteEvent:FireServer("Discard Lucky Block")
                     end)
+                    isProcessingLuckyBlock = false
                     return false
                 elseif errorMsg and string.find(string.lower(errorMsg), "please wait") then
                     print("⏳ Please wait, claiming and retrying...")
@@ -112,13 +139,16 @@ return function(section)
                     if type(retry) == "table" and retry[1] == true then
                         print("✅ Opened on retry! Tier:", retry[2])
                         claimOpenedChicken()
+                        isProcessingLuckyBlock = false
                         return true
                     else
                         print("❌ Retry failed, keeping the lucky block...")
+                        isProcessingLuckyBlock = false
                         return false
                     end
                 else
                     print("💡 Keeping the lucky block...")
+                    isProcessingLuckyBlock = false
                     return false
                 end
             end
@@ -126,16 +156,16 @@ return function(section)
             if result then
                 print("✅ Lucky Block opened!")
                 claimOpenedChicken()
+                isProcessingLuckyBlock = false
                 return true
             else
-                print("❌ Failed to open, discarding...")
-                pcall(function()
-                    remoteEvent:FireServer("Discard Lucky Block")
-                end)
+                print("❌ Failed to open lucky block (no lucky block present?)")
+                isProcessingLuckyBlock = false
                 return false
             end
         else
             print("❌ Unexpected result, keeping the lucky block...")
+            isProcessingLuckyBlock = false
             return false
         end
     end
@@ -176,21 +206,12 @@ return function(section)
         -- Start lucky block handler loop
         luckyBlockLoop = game:GetService("RunService").Heartbeat:Connect(function()
             if not env.AutoLuckyBlock then return end
+            if isProcessingLuckyBlock then return end
             
-            pcall(function()
-                -- Check if there's a lucky block in workspace.Eggs
-                local hasLuckyBlock = false
-                for _, egg in pairs(workspace.Eggs:GetChildren()) do
-                    if isLuckyBlock(egg) then
-                        hasLuckyBlock = true
-                        break
-                    end
-                end
-                
-                if hasLuckyBlock then
-                    handleLuckyBlock()
-                end
-            end)
+            -- Check if there's a lucky block in workspace.Eggs
+            if getFirstLuckyBlock() then
+                handleLuckyBlock()
+            end
         end)
     end)
     
@@ -199,21 +220,12 @@ return function(section)
         env.AutoLuckyBlock = true
         luckyBlockLoop = game:GetService("RunService").Heartbeat:Connect(function()
             if not env.AutoLuckyBlock then return end
+            if isProcessingLuckyBlock then return end
             
-            pcall(function()
-                -- Check if there's a lucky block in workspace.Eggs
-                local hasLuckyBlock = false
-                for _, egg in pairs(workspace.Eggs:GetChildren()) do
-                    if isLuckyBlock(egg) then
-                        hasLuckyBlock = true
-                        break
-                    end
-                end
-                
-                if hasLuckyBlock then
-                    handleLuckyBlock()
-                end
-            end)
+            -- Check if there's a lucky block in workspace.Eggs
+            if getFirstLuckyBlock() then
+                handleLuckyBlock()
+            end
         end)
     end
 
