@@ -91,9 +91,18 @@ return function(section)
 
     -- Function to check if an egg is a lucky block
     local function isLuckyBlock(egg)
-        if egg and egg.Name == "LuckyBlock" then
+        if not egg then return false end
+        
+        -- Check if it has the LuckyBlock attribute (from the screenshot)
+        if egg:GetAttribute("LuckyBlock") ~= nil then
             return true
         end
+        
+        -- Check by name as backup
+        if egg.Name == "LuckyBlock" then
+            return true
+        end
+        
         return false
     end
 
@@ -134,9 +143,12 @@ return function(section)
         -- Collect any existing eggs (skip lucky blocks)
         for i, v in pairs(workspace.Eggs:GetChildren()) do
             if not isLuckyBlock(v) then
+                print("Collecting egg: " .. v.Name)
                 mainEvent:FireServer("Collect Egg", v.Name)
                 task.wait()
                 v:Destroy()
+            else
+                print("Skipping lucky block: " .. v.Name .. " (LuckyBlock attribute: " .. tostring(v:GetAttribute("LuckyBlock")) .. ")")
             end
         end
         
@@ -144,9 +156,12 @@ return function(section)
         collectCon = workspace.Eggs.ChildAdded:Connect(function(c)
             task.wait(1)
             if not isLuckyBlock(c) then
+                print("Collecting new egg: " .. c.Name)
                 mainEvent:FireServer("Collect Egg", c.Name)
                 task.wait()
                 c:Destroy()
+            else
+                print("Skipping lucky block: " .. c.Name .. " (LuckyBlock attribute: " .. tostring(c:GetAttribute("LuckyBlock")) .. ")")
             end
         end)
     end)
@@ -157,9 +172,12 @@ return function(section)
         -- Collect any existing eggs (skip lucky blocks)
         for i, v in pairs(workspace.Eggs:GetChildren()) do
             if not isLuckyBlock(v) then
+                print("Collecting egg: " .. v.Name)
                 mainEvent:FireServer("Collect Egg", v.Name)
                 task.wait()
                 v:Destroy()
+            else
+                print("Skipping lucky block: " .. v.Name .. " (LuckyBlock attribute: " .. tostring(v:GetAttribute("LuckyBlock")) .. ")")
             end
         end
         
@@ -167,9 +185,12 @@ return function(section)
         collectCon = workspace.Eggs.ChildAdded:Connect(function(c)
             task.wait(1)
             if not isLuckyBlock(c) then
+                print("Collecting new egg: " .. c.Name)
                 mainEvent:FireServer("Collect Egg", c.Name)
                 task.wait()
                 c:Destroy()
+            else
+                print("Skipping lucky block: " .. c.Name .. " (LuckyBlock attribute: " .. tostring(c:GetAttribute("LuckyBlock")) .. ")")
             end
         end)
     end
