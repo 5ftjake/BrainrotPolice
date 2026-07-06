@@ -72,7 +72,7 @@ return function(section)
         return false
     end
 
-    -- Function to handle lucky block opening/discarding
+    -- Simplified working lucky block handler
     local function handleLuckyBlock()
         local remoteFunction = game:GetService("ReplicatedStorage").Paper.Remotes.__remotefunction
         local remoteEvent = game:GetService("ReplicatedStorage").Paper.Remotes.__remoteevent
@@ -90,9 +90,9 @@ return function(section)
             if result[1] == true then
                 print("✅ Lucky Block opened! Tier:", result[2])
                 claimOpenedChicken()
-                return true
             else
                 local errorMsg = result[2] or "Unknown error"
+                print("❌ Failed:", errorMsg)
                 
                 -- Check for money issue
                 if errorMsg and string.find(string.lower(errorMsg), "need") then
@@ -100,7 +100,6 @@ return function(section)
                     pcall(function()
                         remoteEvent:FireServer("Discard Lucky Block")
                     end)
-                    return false
                 elseif errorMsg and string.find(string.lower(errorMsg), "please wait") then
                     print("⏳ Please wait, claiming and retrying...")
                     claimOpenedChicken()
@@ -110,27 +109,25 @@ return function(section)
                     if type(retry) == "table" and retry[1] == true then
                         print("✅ Opened on retry! Tier:", retry[2])
                         claimOpenedChicken()
-                        return true
                     else
                         print("❌ Retry failed, keeping the lucky block...")
-                        return false
                     end
                 else
                     print("💡 Keeping the lucky block...")
-                    return false
                 end
             end
         elseif type(result) == "boolean" then
             if result then
                 print("✅ Lucky Block opened!")
                 claimOpenedChicken()
-                return true
             else
-                -- Don't print anything for boolean false (no lucky block present)
-                return false
+                print("❌ Failed to open, discarding...")
+                pcall(function()
+                    remoteEvent:FireServer("Discard Lucky Block")
+                end)
             end
         else
-            return false
+            print("❌ Unexpected result, keeping the lucky block...")
         end
     end
 
@@ -168,7 +165,7 @@ return function(section)
         end
         
         -- Start lucky block handler loop - runs every 1 second
-        luckyBlockLoop = game:GetService("RunService").Heartbeat:Connect(function()
+        luckyBlockLoop = game:GetService("RunService").Stepped:Connect(function()
             if not env.AutoLuckyBlock then return end
             
             pcall(function()
@@ -180,7 +177,7 @@ return function(section)
     -- If lucky block toggle was previously ON, start it
     if setdata.autoLuckyBlock then
         env.AutoLuckyBlock = true
-        luckyBlockLoop = game:GetService("RunService").Heartbeat:Connect(function()
+        luckyBlockLoop = game:GetService("RunService").Stepped:Connect(function()
             if not env.AutoLuckyBlock then return end
             
             pcall(function()
