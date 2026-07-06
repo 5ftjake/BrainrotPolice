@@ -36,7 +36,7 @@ return function(section, data)
     local setdata = data[tostring(game.PlaceId)] or {}
     setdata.farming = setdata.farming or false
     setdata.collecting = setdata.collecting or false
-    setdata.depositMode = setdata.depositMode or true -- true = 1.5x only, false = always deposit
+    setdata.depositMode = setdata.depositMode or true
     data[tostring(game.PlaceId)] = setdata
     writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
 
@@ -83,6 +83,9 @@ return function(section, data)
         return base * multiplier
     end
 
+    -- Create a new section for egg collection to keep it organized
+    local collectSection = "Egg Collection"
+    
     elements:Label("BUY YOUR FIRST CHICKEN BEFORE AUTOFARMING (OTHERWISE WHOLE GAME BREAKS)")
 
     -- Toggle for deposit mode
@@ -99,15 +102,20 @@ return function(section, data)
         end
     end)
 
-    -- Standalone Egg Collection Toggle
-    elements:Toggle("Collect Eggs Only", section, setdata.collecting, function(v)
+    -- Standalone Egg Collection Toggle - using the same section
+    local collectToggle = elements:Toggle("Collect Eggs Only", section, setdata.collecting, function(v)
         env.Collecting = v
         setdata.collecting = v
         data[tostring(game.PlaceId)] = setdata
         writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
         
+        print("Collect Eggs Only toggled to: " .. tostring(v))
+        
         if not env.Collecting then 
-            if collectCon then collectCon:Disconnect() end
+            if collectCon then 
+                collectCon:Disconnect() 
+                collectCon = nil
+            end
             return 
         end
         
@@ -133,6 +141,9 @@ return function(section, data)
             -- No deposit here - waits for 1.5x event from the interceptor
         end)
     end)
+    
+    -- Make sure the toggle is visible by printing its state
+    print("Collect Eggs Only toggle created with state: " .. tostring(setdata.collecting))
 
     elements:Toggle("Autofarm", section, setdata.farming, function(v)
         env.setconfig("farmrots", v)
