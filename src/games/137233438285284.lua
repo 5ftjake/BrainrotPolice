@@ -333,10 +333,6 @@ return function(section)
                         mainFunction:InvokeServer("Collect Cash")
                         task.wait()
                         
-                        -- Then upgrade process level
-                        mainFunction:InvokeServer("Upgrade Process Level")
-                        task.wait()
-                        
                         -- Determine how many chickens to buy
                         local tobuy = 0
                         local result = parseSuffixedNumber(cashval.Text)
