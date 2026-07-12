@@ -37,6 +37,7 @@ return function(section)
     env.AutoBuy = false
     env.AutoRebirth = false
     env.AutoDeposit = false
+    env.AutoUpgrade = false
 
     -- Load config
     local data = {}
@@ -53,6 +54,7 @@ return function(section)
     setdata.autoBuy = setdata.autoBuy or false
     setdata.autoRebirth = setdata.autoRebirth or false
     setdata.autoDeposit = setdata.autoDeposit or false
+    setdata.autoUpgrade = setdata.autoUpgrade or false
     data[tostring(game.PlaceId)] = setdata
     writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
 
@@ -68,6 +70,7 @@ return function(section)
     local buyRunning = false
     local rebirthRunning = false
     local depositRunning = false
+    local upgradeRunning = false
 
     -- Suffixes for parsing numbers
     local suffixes = {
@@ -260,6 +263,52 @@ return function(section)
                         print("⏭️ Skipping auto deposit (1.5x mode is ON)")
                     end
                     task.wait(30) -- Wait 30 seconds between deposits
+                end
+            end)
+        end
+    end
+
+    -- Auto Upgrade Process Toggle
+    elements:Toggle("Auto Upgrade Process (250s)", section, setdata.autoUpgrade, function(v)
+        env.AutoUpgrade = v
+        setdata.autoUpgrade = v
+        data[tostring(game.PlaceId)] = setdata
+        writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
+        
+        print("Auto Upgrade Process toggled to: " .. tostring(v))
+        
+        if not env.AutoUpgrade then
+            upgradeRunning = false
+            return
+        end
+        
+        -- Start upgrade loop - runs every 250 seconds
+        if not upgradeRunning then
+            upgradeRunning = true
+            task.spawn(function()
+                while upgradeRunning and env.AutoUpgrade do
+                    pcall(function()
+                        mainFunction:InvokeServer("Upgrade Process Level")
+                        print("⬆️ Upgraded process level!")
+                    end)
+                    task.wait(250) -- Wait 250 seconds between upgrades
+                end
+            end)
+        end
+    end)
+    
+    -- If upgrade was previously ON, start it
+    if setdata.autoUpgrade then
+        env.AutoUpgrade = true
+        if not upgradeRunning then
+            upgradeRunning = true
+            task.spawn(function()
+                while upgradeRunning and env.AutoUpgrade do
+                    pcall(function()
+                        mainFunction:InvokeServer("Upgrade Process Level")
+                        print("⬆️ Upgraded process level!")
+                    end)
+                    task.wait(250) -- Wait 250 seconds between upgrades
                 end
             end)
         end
