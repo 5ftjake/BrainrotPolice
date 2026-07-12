@@ -36,6 +36,7 @@ return function(section)
     env.AutoMerge = false
     env.AutoBuy = false
     env.AutoRebirth = false
+    env.AutoDeposit = false
 
     -- Load config
     local data = {}
@@ -51,6 +52,7 @@ return function(section)
     setdata.autoMerge = setdata.autoMerge or false
     setdata.autoBuy = setdata.autoBuy or false
     setdata.autoRebirth = setdata.autoRebirth or false
+    setdata.autoDeposit = setdata.autoDeposit or false
     data[tostring(game.PlaceId)] = setdata
     writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
 
@@ -65,6 +67,7 @@ return function(section)
     local cashRunning = false
     local buyRunning = false
     local rebirthRunning = false
+    local depositRunning = false
 
     -- Suffixes for parsing numbers
     local suffixes = {
@@ -184,9 +187,83 @@ return function(section)
         if v then
             print("Deposit mode: Only at 1.5x multiplier")
         else
-            print("Deposit mode: Always deposit")
+            print("Deposit mode: Auto deposit (every 30 seconds)")
         end
     end)
+
+    -- Auto Deposit Toggle (only works when 1.5x mode is OFF)
+    elements:Toggle("Auto Deposit (30s)", section, setdata.autoDeposit, function(v)
+        env.AutoDeposit = v
+        setdata.autoDeposit = v
+        data[tostring(game.PlaceId)] = setdata
+        writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
+        
+        print("Auto Deposit toggled to: " .. tostring(v))
+        
+        if not env.AutoDeposit then
+            depositRunning = false
+            return
+        end
+        
+        -- Start deposit loop - runs every 30 seconds
+        if not depositRunning then
+            depositRunning = true
+            task.spawn(function()
+                while depositRunning and env.AutoDeposit do
+                    -- Only deposit if 1.5x mode is OFF
+                    if not depositAtMultiplier then
+                        pcall(function()
+                            -- First collect all eggs
+                            for i, v in pairs(workspace.Eggs:GetChildren()) do
+                                if not isLuckyBlock(v) then
+                                    mainEvent:FireServer("Collect Egg", v.Name)
+                                    task.wait()
+                                    v:Destroy()
+                                end
+                            end
+                            -- Then deposit them
+                            mainFunction:InvokeServer("Deposit Eggs")
+                            print("🥚 Deposited eggs (auto deposit)!")
+                        end)
+                    else
+                        print("⏭️ Skipping auto deposit (1.5x mode is ON)")
+                    end
+                    task.wait(30) -- Wait 30 seconds between deposits
+                end
+            end)
+        end
+    end)
+    
+    -- If deposit was previously ON, start it
+    if setdata.autoDeposit then
+        env.AutoDeposit = true
+        if not depositRunning then
+            depositRunning = true
+            task.spawn(function()
+                while depositRunning and env.AutoDeposit do
+                    -- Only deposit if 1.5x mode is OFF
+                    if not depositAtMultiplier then
+                        pcall(function()
+                            -- First collect all eggs
+                            for i, v in pairs(workspace.Eggs:GetChildren()) do
+                                if not isLuckyBlock(v) then
+                                    mainEvent:FireServer("Collect Egg", v.Name)
+                                    task.wait()
+                                    v:Destroy()
+                                end
+                            end
+                            -- Then deposit them
+                            mainFunction:InvokeServer("Deposit Eggs")
+                            print("🥚 Deposited eggs (auto deposit)!")
+                        end)
+                    else
+                        print("⏭️ Skipping auto deposit (1.5x mode is ON)")
+                    end
+                    task.wait(30) -- Wait 30 seconds between deposits
+                end
+            end)
+        end
+    end
 
     -- Auto Lucky Block Toggle
     elements:Toggle("Auto Lucky Block", section, setdata.autoLuckyBlock, function(v)
