@@ -9,6 +9,7 @@ for _, Connection in getconnections(Event.OnClientEvent) do
         -- Check if this is the 1.5x multiplier event and if deposit mode is enabled
         if depositAtMultiplier and args[1] == "UI-Notification" and args[2] and args[2].Text then
             if args[2].Text == "Egg Multiplier rose to 1.5x!" then
+                    task.wait(27)
                 print("1.5x multiplier detected! Depositing eggs...")
                 
                 -- Just deposit the eggs (they're already collected)
