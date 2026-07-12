@@ -34,6 +34,8 @@ return function(section)
     env.CollectCash = false
     env.AutoLuckyBlock = false
     env.AutoMerge = false
+    env.AutoBuy = false
+    env.AutoRebirth = false
 
     -- Load config
     local data = {}
@@ -47,16 +49,52 @@ return function(section)
     setdata.depositMode = setdata.depositMode or true
     setdata.autoLuckyBlock = setdata.autoLuckyBlock or false
     setdata.autoMerge = setdata.autoMerge or false
+    setdata.autoBuy = setdata.autoBuy or false
+    setdata.autoRebirth = setdata.autoRebirth or false
     data[tostring(game.PlaceId)] = setdata
     writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
 
+    local cashval = plr.PlayerGui.Main.Currencies.Cash.List.Amount
     local mainEvent = game:GetService("ReplicatedStorage").Paper.Remotes.__remoteevent
     local mainFunction = game:GetService("ReplicatedStorage").Paper.Remotes.__remotefunction
+    local buyBtns = workspace.Plots[plr.Name].Buttons.BuyChickens
 
     local collectCon
     local luckyBlockRunning = false
     local mergeRunning = false
     local cashRunning = false
+    local buyRunning = false
+    local rebirthRunning = false
+
+    -- Suffixes for parsing numbers
+    local suffixes = {
+        "K","M","B","T","Qd","Qn","Sx","Sp","Oc","No","De",
+        "UDe","DDe","TDe","QdDe","QnDe","SxDe","SpDe","OcDe","NoDe","Vt",
+        "UVt","DVt","TVt","QdVt","QnVt","SxVt","SpVt","OcVt","NoVt","Tg",
+        "UTg","DTg","TTg","QdTg","QnTg","SxTg","SpTg","OcTg","NoTg","qg",
+        "Uqg","Dqg","Tqg","Qdqg","Qnqg","Sxqg","Spqg","Ocqg","Noqg","Qg",
+        "UQg","DQg","TQg","QdQg","QnQg","SxQg","SpQg","OcQg","NoQg","sg",
+        "Usg","Dsg","Tsg","Qdsg","Qnsg","Sxsg","Spsg","Ocsg","Nosg","Sg",
+        "USg","DSg","TSg","QdSg","QnSg","SxSg","SpSg","OcSg","NoSg","Og",
+        "UOg","DOg","TOg","QdOg","QnOg","SxOg","SpOg","OcOg","NoOg","Ng",
+        "UNg","DNg","TNg","QdNg","QnNg","SxNg","SpNg","OcNg","NoNg","Ce","UCe"
+    }
+
+    local suffixValue = {}
+    for i, suf in ipairs(suffixes) do
+        suffixValue[suf] = 1000 ^ i
+    end
+
+    local function parseSuffixedNumber(str)
+        str = str:gsub("[%$,%s]", "")
+        local numberPart, suffixPart = str:match("^(-?%d*%.?%d+)(%a*)$")
+        local base = tonumber(numberPart)
+        if suffixPart == "" then
+            return base
+        end
+        local multiplier = suffixValue[suffixPart]
+        return base * multiplier
+    end
 
     -- Function to check if an egg is a lucky block
     local function isLuckyBlock(egg)
@@ -189,6 +227,144 @@ return function(section)
                         handleLuckyBlock()
                     end)
                     task.wait(1) -- Wait 1 second between attempts
+                end
+            end)
+        end
+    end
+
+    -- Auto Buy Chickens Toggle
+    elements:Toggle("Auto Buy Chickens", section, setdata.autoBuy, function(v)
+        env.AutoBuy = v
+        setdata.autoBuy = v
+        data[tostring(game.PlaceId)] = setdata
+        writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
+        
+        print("Auto Buy Chickens toggled to: " .. tostring(v))
+        
+        if not env.AutoBuy then
+            buyRunning = false
+            return
+        end
+        
+        -- Start buy loop - runs every 5 seconds
+        if not buyRunning then
+            buyRunning = true
+            task.spawn(function()
+                while buyRunning and env.AutoBuy do
+                    pcall(function()
+                        -- First collect cash
+                        mainFunction:InvokeServer("Collect Cash")
+                        task.wait()
+                        
+                        -- Then upgrade process level
+                        mainFunction:InvokeServer("Upgrade Process Level")
+                        task.wait()
+                        
+                        -- Determine how many chickens to buy
+                        local tobuy = 0
+                        local result = parseSuffixedNumber(cashval.Text)
+                        if parseSuffixedNumber(buyBtns.Buy100.Button.UI.Cost.Text) <= result then
+                            tobuy = 100
+                        elseif parseSuffixedNumber(buyBtns.Buy25.Button.UI.Cost.Text) <= result then
+                            tobuy = 25
+                        elseif parseSuffixedNumber(buyBtns.Buy5.Button.UI.Cost.Text) <= result then
+                            tobuy = 5
+                        elseif parseSuffixedNumber(buyBtns.Buy1.Button.UI.Cost.Text) <= result then
+                            tobuy = 1
+                        end
+                        
+                        if tobuy > 0 then
+                            mainFunction:InvokeServer("Buy Chickens", tobuy)
+                            print("🐔 Bought " .. tobuy .. " chickens!")
+                        end
+                    end)
+                    task.wait(5) -- Wait 5 seconds between buy attempts
+                end
+            end)
+        end
+    end)
+    
+    -- If buy was previously ON, start it
+    if setdata.autoBuy then
+        env.AutoBuy = true
+        if not buyRunning then
+            buyRunning = true
+            task.spawn(function()
+                while buyRunning and env.AutoBuy do
+                    pcall(function()
+                        -- First collect cash
+                        mainFunction:InvokeServer("Collect Cash")
+                        task.wait()
+                        
+                        -- Then upgrade process level
+                        mainFunction:InvokeServer("Upgrade Process Level")
+                        task.wait()
+                        
+                        -- Determine how many chickens to buy
+                        local tobuy = 0
+                        local result = parseSuffixedNumber(cashval.Text)
+                        if parseSuffixedNumber(buyBtns.Buy100.Button.UI.Cost.Text) <= result then
+                            tobuy = 100
+                        elseif parseSuffixedNumber(buyBtns.Buy25.Button.UI.Cost.Text) <= result then
+                            tobuy = 25
+                        elseif parseSuffixedNumber(buyBtns.Buy5.Button.UI.Cost.Text) <= result then
+                            tobuy = 5
+                        elseif parseSuffixedNumber(buyBtns.Buy1.Button.UI.Cost.Text) <= result then
+                            tobuy = 1
+                        end
+                        
+                        if tobuy > 0 then
+                            mainFunction:InvokeServer("Buy Chickens", tobuy)
+                            print("🐔 Bought " .. tobuy .. " chickens!")
+                        end
+                    end)
+                    task.wait(5) -- Wait 5 seconds between buy attempts
+                end
+            end)
+        end
+    end
+
+    -- Auto Rebirth Toggle
+    elements:Toggle("Auto Rebirth", section, setdata.autoRebirth, function(v)
+        env.AutoRebirth = v
+        setdata.autoRebirth = v
+        data[tostring(game.PlaceId)] = setdata
+        writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
+        
+        print("Auto Rebirth toggled to: " .. tostring(v))
+        
+        if not env.AutoRebirth then
+            rebirthRunning = false
+            return
+        end
+        
+        -- Start rebirth loop - runs every 30 seconds
+        if not rebirthRunning then
+            rebirthRunning = true
+            task.spawn(function()
+                while rebirthRunning and env.AutoRebirth do
+                    pcall(function()
+                        local result = mainFunction:InvokeServer("Rebirth")
+                        print("🔄 Rebirth attempted! Result:", result)
+                    end)
+                    task.wait(30) -- Wait 30 seconds between rebirth attempts
+                end
+            end)
+        end
+    end)
+    
+    -- If rebirth was previously ON, start it
+    if setdata.autoRebirth then
+        env.AutoRebirth = true
+        if not rebirthRunning then
+            rebirthRunning = true
+            task.spawn(function()
+                while rebirthRunning and env.AutoRebirth do
+                    pcall(function()
+                        local result = mainFunction:InvokeServer("Rebirth")
+                        print("🔄 Rebirth attempted! Result:", result)
+                    end)
+                    task.wait(30) -- Wait 30 seconds between rebirth attempts
                 end
             end)
         end
